@@ -1,0 +1,68 @@
+use crate::functions::registry::FunctionRegistry;
+use crate::functions::{InvokeRequest, InvokeResponse, Result};
+use crate::runtime::SimpleRuntime;
+
+pub mod simple;
+
+/// 调度器特征
+#[async_trait::async_trait]
+pub trait Scheduler {
+    /// 调度函数执行
+    async fn schedule(&self, function_name: &str, request: InvokeRequest)
+    -> Result<InvokeResponse>;
+}
+
+/// 简单调度器实现
+#[derive(Debug, Clone)]
+pub struct SimpleScheduler {
+    registry: FunctionRegistry,
+    runtime: SimpleRuntime,
+}
+
+impl SimpleScheduler {
+    pub fn new() -> Self {
+        Self {
+            registry: FunctionRegistry::new(),
+            runtime: SimpleRuntime::new(),
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_registry(registry: FunctionRegistry) -> Self {
+        Self {
+            registry,
+            runtime: SimpleRuntime::new(),
+        }
+    }
+
+    /// 获取函数注册表的引用
+    pub fn registry(&self) -> &FunctionRegistry {
+        &self.registry
+    }
+}
+
+#[async_trait::async_trait]
+impl Scheduler for SimpleScheduler {
+    async fn schedule(
+        &self,
+        function_name: &str,
+        request: InvokeRequest,
+    ) -> Result<InvokeResponse> {
+        tracing::info!("Scheduling function: {}", function_name);
+
+        // 从注册表获取函数
+        let function = self.registry.get(function_name).await?;
+
+        // 执行函数
+        let response = self.runtime.execute(&function, &request).await?;
+
+        tracing::info!("Function {} scheduled and executed", function_name);
+        Ok(response)
+    }
+}
+
+impl Default for SimpleScheduler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
