@@ -5,6 +5,7 @@ use std::time::{Duration, Instant};
 use tokio::time::timeout;
 
 pub mod executor;
+pub mod loader;
 
 /// 简单的函数执行器
 #[derive(Debug, Clone)]

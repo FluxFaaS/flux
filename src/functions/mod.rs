@@ -72,6 +72,18 @@ pub enum FluxError {
 
     #[error("Internal error: {0}")]
     Internal(#[from] anyhow::Error),
+
+    // 第二阶段新增错误类型
+    #[error("Function compilation failed: {0}")]
+    #[allow(dead_code)]
+    CompilationError(String),
+
+    #[error("Function validation failed: {reason}")]
+    ValidationError { reason: String },
+
+    #[error("Cache error: {0}")]
+    #[allow(dead_code)]
+    CacheError(String),
 }
 
 pub type Result<T> = std::result::Result<T, FluxError>;

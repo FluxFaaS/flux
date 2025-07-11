@@ -80,9 +80,11 @@ async fn run_interactive_cli() -> anyhow::Result<()> {
         println!("1. 📋 查看所有函数");
         println!("2. 🚀 调用函数");
         println!("3. ➕ 注册新函数");
-        println!("4. 📊 查看系统状态");
-        println!("5. 🆔 演示 SCRU128 功能");
-        println!("6. 🚪 退出");
+        println!("4. 📁 从文件加载函数");
+        println!("5. 📂 从目录批量加载函数");
+        println!("6. 📊 查看系统状态");
+        println!("7. 🆔 演示 SCRU128 功能");
+        println!("8. 🚪 退出");
 
         print!("\nflux> ");
         io::stdout().flush()?;
@@ -95,9 +97,11 @@ async fn run_interactive_cli() -> anyhow::Result<()> {
             "1" => list_functions(&scheduler).await?,
             "2" => invoke_function(&scheduler).await?,
             "3" => register_new_function(&scheduler).await?,
-            "4" => show_system_status(&scheduler).await?,
-            "5" => demonstrate_scru128_features(&scheduler).await?,
-            "6" | "q" | "quit" | "exit" => {
+            "4" => load_function_from_file(&scheduler).await?,
+            "5" => load_functions_from_directory(&scheduler).await?,
+            "6" => show_system_status(&scheduler).await?,
+            "7" => demonstrate_scru128_features(&scheduler).await?,
+            "8" | "q" | "quit" | "exit" => {
                 println!("👋 再见！");
                 break;
             }
@@ -401,6 +405,107 @@ async fn demonstrate_scru128_features(_scheduler: &SimpleScheduler) -> anyhow::R
     println!("   • URL 友好，无需转义");
 
     println!("\n🗑️  注意：演示函数不会实际注册到系统中");
+
+    Ok(())
+}
+
+/// 从文件加载函数
+async fn load_function_from_file(scheduler: &SimpleScheduler) -> anyhow::Result<()> {
+    println!("📁 从文件加载函数");
+
+    print!("请输入函数文件路径 (例如: examples/functions/greet.rs): ");
+    io::stdout().flush()?;
+    let mut file_path = String::new();
+    io::stdin().read_line(&mut file_path)?;
+    let file_path = file_path.trim();
+
+    if file_path.is_empty() {
+        println!("❌ 文件路径不能为空");
+        return Ok(());
+    }
+
+    print!("自定义函数名称 (可选，回车使用文件名): ");
+    io::stdout().flush()?;
+    let mut custom_name = String::new();
+    io::stdin().read_line(&mut custom_name)?;
+    let custom_name = custom_name.trim();
+
+    print!("函数描述 (可选): ");
+    io::stdout().flush()?;
+    let mut description = String::new();
+    io::stdin().read_line(&mut description)?;
+    let description = description.trim();
+
+    print!("超时时间 (毫秒，默认 5000): ");
+    io::stdout().flush()?;
+    let mut timeout_input = String::new();
+    io::stdin().read_line(&mut timeout_input)?;
+    let timeout_ms = timeout_input.trim().parse().ok();
+
+    let name = if custom_name.is_empty() {
+        None
+    } else {
+        Some(custom_name.to_string())
+    };
+
+    let desc = if description.is_empty() {
+        None
+    } else {
+        Some(description.to_string())
+    };
+
+    println!("📤 正在从文件加载函数...");
+
+    match scheduler
+        .registry()
+        .register_from_file(file_path, name, desc, timeout_ms)
+        .await
+    {
+        Ok(_) => {
+            println!("✅ 函数从文件 '{file_path}' 加载成功!");
+            println!("💡 函数已通过安全验证并注册到系统中");
+        }
+        Err(e) => {
+            println!("❌ 函数加载失败: {e}");
+            println!("💡 请检查文件路径和文件内容是否正确");
+        }
+    }
+
+    Ok(())
+}
+
+/// 从目录批量加载函数
+async fn load_functions_from_directory(scheduler: &SimpleScheduler) -> anyhow::Result<()> {
+    println!("📂 从目录批量加载函数");
+
+    print!("请输入函数目录路径 (例如: examples/functions): ");
+    io::stdout().flush()?;
+    let mut dir_path = String::new();
+    io::stdin().read_line(&mut dir_path)?;
+    let dir_path = dir_path.trim();
+
+    if dir_path.is_empty() {
+        println!("❌ 目录路径不能为空");
+        return Ok(());
+    }
+
+    println!("📤 正在从目录批量加载函数...");
+
+    match scheduler.registry().register_from_directory(dir_path).await {
+        Ok(count) => {
+            if count > 0 {
+                println!("✅ 成功从目录 '{dir_path}' 加载了 {count} 个函数!");
+                println!("💡 所有函数都已通过安全验证并注册到系统中");
+            } else {
+                println!("⚠️  目录 '{dir_path}' 中没有找到有效的函数文件");
+                println!("💡 请确保目录中包含 .rs 文件且格式正确");
+            }
+        }
+        Err(e) => {
+            println!("❌ 批量加载失败: {e}");
+            println!("💡 请检查目录路径是否正确");
+        }
+    }
 
     Ok(())
 }
