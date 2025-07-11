@@ -39,6 +39,11 @@ impl SimpleScheduler {
     pub fn registry(&self) -> &FunctionRegistry {
         &self.registry
     }
+
+    /// 获取运行时的引用
+    pub fn runtime(&self) -> &SimpleRuntime {
+        &self.runtime
+    }
 }
 
 #[async_trait::async_trait]

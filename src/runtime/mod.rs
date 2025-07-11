@@ -1,19 +1,37 @@
 use crate::functions::{
     ExecutionStatus, FluxError, FunctionMetadata, InvokeRequest, InvokeResponse, Result,
 };
+use crate::runtime::cache::FunctionCache;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::time::timeout;
 
+pub mod cache;
 pub mod executor;
 pub mod loader;
 
 /// 简单的函数执行器
 #[derive(Debug, Clone)]
-pub struct SimpleRuntime;
+pub struct SimpleRuntime {
+    /// 函数缓存
+    cache: Arc<FunctionCache>,
+}
 
 impl SimpleRuntime {
     pub fn new() -> Self {
-        Self
+        Self {
+            cache: Arc::new(FunctionCache::default()),
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_cache(cache: Arc<FunctionCache>) -> Self {
+        Self { cache }
+    }
+
+    /// 获取缓存引用
+    pub fn cache(&self) -> &Arc<FunctionCache> {
+        &self.cache
     }
 
     /// 执行函数
@@ -25,6 +43,21 @@ impl SimpleRuntime {
         let start_time = Instant::now();
 
         tracing::info!("Executing function: {}", function.name);
+
+        // 尝试从缓存获取编译后的函数
+        if let Some(_cached_function) = self.cache.get(&function.name).await {
+            tracing::debug!("Using cached version of function: {}", function.name);
+            // 可以在这里使用预编译的结果来优化执行
+        } else {
+            // 缓存函数以备下次使用
+            if let Err(e) = self
+                .cache
+                .put(function.name.clone(), function.clone())
+                .await
+            {
+                tracing::warn!("Failed to cache function {}: {}", function.name, e);
+            }
+        }
 
         // 设置执行超时
         let timeout_duration = Duration::from_millis(function.timeout_ms);
