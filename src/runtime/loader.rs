@@ -1,15 +1,26 @@
 use crate::functions::{FluxError, FunctionMetadata, RegisterFunctionRequest, Result};
+use crate::runtime::validator::FunctionValidator;
 use std::path::Path;
 use tokio::fs;
 
 /// 动态函数加载器
 #[derive(Debug, Clone)]
-pub struct FunctionLoader;
+pub struct FunctionLoader {
+    validator: FunctionValidator,
+}
 
 impl FunctionLoader {
     /// 创建新的函数加载器
     pub fn new() -> Self {
-        Self
+        Self {
+            validator: FunctionValidator::new(),
+        }
+    }
+
+    /// 创建带自定义验证器的函数加载器
+    #[allow(dead_code)]
+    pub fn with_validator(validator: FunctionValidator) -> Self {
+        Self { validator }
     }
 
     /// 从文件路径加载函数代码
@@ -54,6 +65,9 @@ impl FunctionLoader {
     ) -> Result<FunctionMetadata> {
         let path = path.as_ref();
         let code = self.load_from_file(path).await?;
+
+        // 验证函数代码
+        self.validate_function_code(&code).await?;
 
         // 如果没有提供名称，从文件名推断
         let function_name = name.unwrap_or_else(|| {
@@ -122,39 +136,9 @@ impl FunctionLoader {
         Ok(functions)
     }
 
-    /// 验证函数代码的基本格式
-    pub fn validate_function_code(&self, code: &str) -> Result<()> {
-        if code.trim().is_empty() {
-            return Err(FluxError::ValidationError {
-                reason: "Function code cannot be empty".to_string(),
-            });
-        }
-
-        // 检查是否包含基本的函数结构
-        if !code.contains("fn ") {
-            return Err(FluxError::ValidationError {
-                reason: "Function code must contain at least one function definition".to_string(),
-            });
-        }
-
-        // 检查是否包含危险的系统调用
-        let dangerous_patterns = [
-            "std::process",
-            "std::fs::remove",
-            "std::fs::write",
-            "unsafe",
-        ];
-        for pattern in &dangerous_patterns {
-            if code.contains(pattern) {
-                return Err(FluxError::ValidationError {
-                    reason: format!(
-                        "Function code contains potentially dangerous pattern: {pattern}"
-                    ),
-                });
-            }
-        }
-
-        Ok(())
+    /// 验证函数代码
+    pub async fn validate_function_code(&self, code: &str) -> Result<()> {
+        self.validator.validate(code).await
     }
 }
 

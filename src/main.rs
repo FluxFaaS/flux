@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 use std::io::{self, Write};
 use tracing::info;
 
@@ -84,8 +86,10 @@ async fn run_interactive_cli() -> anyhow::Result<()> {
         println!("5. 📂 从目录批量加载函数");
         println!("6. 📊 查看系统状态");
         println!("7. 🎯 查看缓存统计");
-        println!("8. 🆔 演示 SCRU128 功能");
-        println!("9. 🚪 退出");
+        println!("8. 📊 查看性能监控");
+        println!("9. 🔄 重置监控数据");
+        println!("10. 🆔 演示 SCRU128 功能");
+        println!("11. 🚪 退出");
 
         print!("\nflux> ");
         io::stdout().flush()?;
@@ -102,8 +106,10 @@ async fn run_interactive_cli() -> anyhow::Result<()> {
             "5" => load_functions_from_directory(&scheduler).await?,
             "6" => show_system_status(&scheduler).await?,
             "7" => show_cache_statistics(&scheduler).await?,
-            "8" => demonstrate_scru128_features(&scheduler).await?,
-            "9" | "q" | "quit" | "exit" => {
+            "8" => show_performance_monitor(&scheduler).await?,
+            "9" => reset_performance_data(&scheduler).await?,
+            "10" => demonstrate_scru128_features(&scheduler).await?,
+            "11" | "q" | "quit" | "exit" => {
                 println!("👋 再见！");
                 break;
             }
@@ -576,6 +582,162 @@ async fn show_cache_statistics(scheduler: &SimpleScheduler) -> anyhow::Result<()
         }
     } else {
         println!("\n💡 提示: 缓存为空，执行一些函数后可以看到缓存效果");
+    }
+
+    Ok(())
+}
+
+/// 显示性能监控信息
+async fn show_performance_monitor(scheduler: &SimpleScheduler) -> anyhow::Result<()> {
+    println!("📊 FluxFaaS 性能监控");
+    println!("===================");
+
+    let monitor = scheduler.runtime().monitor();
+    let report = monitor.generate_report().await;
+
+    // 显示系统健康状态
+    let health_icon = match report.health_status {
+        crate::runtime::monitor::HealthStatus::Healthy => "💚",
+        crate::runtime::monitor::HealthStatus::Warning => "💛",
+        crate::runtime::monitor::HealthStatus::Critical => "❤️",
+    };
+    println!(
+        "🏥 系统健康状态: {} {:?}",
+        health_icon, report.health_status
+    );
+
+    // 显示全局统计
+    println!("\n📈 全局统计:");
+    println!("  📝 总请求数: {}", report.global_stats.total_requests);
+    println!("  ✅ 成功次数: {}", report.global_stats.total_success);
+    println!("  ❌ 失败次数: {}", report.global_stats.total_failures);
+
+    if report.global_stats.total_requests > 0 {
+        let success_rate = (report.global_stats.total_success as f64
+            / report.global_stats.total_requests as f64)
+            * 100.0;
+        println!("  🎯 成功率: {:.2}%", success_rate);
+    }
+
+    if let Some(start_time) = report.global_stats.start_time {
+        let uptime = report.generated_at.duration_since(start_time);
+        println!("  ⏰ 系统运行时间: {:.2}秒", uptime.as_secs_f64());
+    }
+
+    println!(
+        "  💾 峰值内存: {:.2} KB",
+        report.global_stats.peak_system_memory as f64 / 1024.0
+    );
+    println!(
+        "  🔄 当前内存: {:.2} KB",
+        report.global_stats.current_system_memory as f64 / 1024.0
+    );
+
+    // 显示函数统计
+    if !report.function_stats.is_empty() {
+        println!("\n📊 函数执行统计:");
+        for (name, stats) in report.function_stats.iter() {
+            println!("  📦 函数: {}", name);
+            println!("    📝 调用次数: {}", stats.total_calls);
+            println!("    ✅ 成功: {} 次", stats.successful_calls);
+            println!("    ❌ 失败: {} 次", stats.failed_calls);
+
+            if stats.total_calls > 0 {
+                let error_rate = (stats.failed_calls as f64 / stats.total_calls as f64) * 100.0;
+                println!("    🎯 错误率: {:.2}%", error_rate);
+            }
+
+            println!(
+                "    ⏱️  平均执行时间: {:.2}ms",
+                stats.avg_duration.as_millis()
+            );
+
+            if let Some(min) = stats.min_duration {
+                println!("    ⚡ 最快: {:.2}ms", min.as_millis());
+            }
+
+            if let Some(max) = stats.max_duration {
+                println!("    🐌 最慢: {:.2}ms", max.as_millis());
+            }
+
+            println!(
+                "    💾 峰值内存: {:.2} KB",
+                stats.peak_memory as f64 / 1024.0
+            );
+            println!(
+                "    📊 平均内存: {:.2} KB",
+                stats.avg_memory as f64 / 1024.0
+            );
+            println!();
+        }
+
+        // 显示热点函数
+        let hottest = monitor.get_hottest_functions(3).await;
+        if !hottest.is_empty() {
+            println!("🔥 热点函数 (调用最频繁):");
+            for (i, (name, calls)) in hottest.iter().enumerate() {
+                println!("  {}. {} ({} 次调用)", i + 1, name, calls);
+            }
+            println!();
+        }
+
+        // 显示最慢函数
+        let slowest = monitor.get_slowest_functions(3).await;
+        if !slowest.is_empty() {
+            println!("🐌 最慢函数:");
+            for (i, (name, duration)) in slowest.iter().enumerate() {
+                println!("  {}. {} ({:.2}ms 平均)", i + 1, name, duration.as_millis());
+            }
+            println!();
+        }
+
+        // 显示错误率高的函数
+        let error_prone = monitor.get_error_prone_functions(3).await;
+        if !error_prone.is_empty() {
+            println!("⚠️  高错误率函数:");
+            for (i, (name, error_rate)) in error_prone.iter().enumerate() {
+                println!("  {}. {} ({:.2}% 错误率)", i + 1, name, error_rate * 100.0);
+            }
+            println!();
+        }
+    } else {
+        println!("\n💡 还没有函数执行记录，调用一些函数后再查看统计");
+    }
+
+    // 显示性能建议
+    println!("💡 性能建议:");
+    for recommendation in &report.recommendations {
+        println!("  • {}", recommendation);
+    }
+
+    Ok(())
+}
+
+/// 重置性能监控数据
+async fn reset_performance_data(scheduler: &SimpleScheduler) -> anyhow::Result<()> {
+    println!("🔄 重置性能监控数据");
+
+    print!("确认要重置所有性能监控数据吗？(y/N): ");
+    io::stdout().flush()?;
+
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+    let confirmation = input.trim().to_lowercase();
+
+    if confirmation == "y" || confirmation == "yes" {
+        let monitor = scheduler.runtime().monitor();
+
+        match monitor.reset_stats().await {
+            Ok(_) => {
+                println!("✅ 性能监控数据已重置");
+                println!("💡 新的统计将从现在开始重新计算");
+            }
+            Err(e) => {
+                println!("❌ 重置失败: {}", e);
+            }
+        }
+    } else {
+        println!("❌ 重置操作已取消");
     }
 
     Ok(())

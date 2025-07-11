@@ -93,7 +93,7 @@ impl FunctionRegistry {
             .await?;
 
         // 验证函数代码
-        loader.validate_function_code(&function.code)?;
+        loader.validate_function_code(&function.code).await?;
 
         self.register(function).await
     }
@@ -106,7 +106,7 @@ impl FunctionRegistry {
         let mut registered_count = 0;
         for function in functions {
             // 验证函数代码
-            if let Err(e) = loader.validate_function_code(&function.code) {
+            if let Err(e) = loader.validate_function_code(&function.code).await {
                 tracing::warn!(
                     "Skipping function {} due to validation error: {}",
                     function.name,
