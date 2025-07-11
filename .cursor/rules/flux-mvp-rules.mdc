@@ -1,0 +1,139 @@
+---
+alwaysApply: true
+---
+# FluxFaaS Cursor Rules
+
+## 项目概述
+FluxFaaS 是一个轻量级私有 Serverless 平台，基于 Rust 和 Silent 框架构建。当前目标是实现一个能跑起来的 MVP。
+
+## 核心原则
+
+### 1. MVP 优先
+- 优先实现最基础的函数调用功能
+- 避免过度设计，专注于核心流程
+- 每个功能都要能实际运行和测试
+- 保持代码简洁，后续可以重构
+
+### 2. 架构约束
+- 必须使用 Silent 框架作为 web 服务基础
+- 遵循现有目录结构：`gateway/`, `scheduler/`, `runtime/`, `functions/`
+- 每个模块保持独立，通过清晰的接口通信
+- 优先使用 Rust 标准库和成熟的 crate
+
+### 3. 开发顺序
+按以下顺序开发组件：
+1. **Gateway** - 基础 HTTP 接口，接收函数调用请求
+2. **Runtime** - 简单的函数执行器，支持基础的 Rust 函数
+3. **Scheduler** - 基础调度逻辑，管理函数生命周期
+4. **Functions** - 示例函数和函数管理工具
+
+## 技术约束
+
+### 必须使用的技术
+- **Web 框架**: Silent（必须，这是项目的核心约束）
+- **异步运行时**: Tokio
+- **序列化**: Serde
+- **日志**: tracing
+- **错误处理**: anyhow 或 thiserror
+
+### 推荐的技术栈
+- **HTTP 客户端**: reqwest
+- **JSON 处理**: serde_json
+- **配置管理**: config crate
+- **数据库**: 暂时用内存存储，后续考虑 SQLite
+- **容器**: 暂时用进程隔离，后续考虑 Docker
+
+### 避免的技术
+- 复杂的 ORM（如 Diesel）- MVP 阶段不需要
+- 复杂的状态管理 - 保持简单
+- 过多的宏 - 保持代码清晰
+- 重量级的依赖 - 保持轻量级
+
+## 代码规范
+
+### 文件组织
+```
+src/
+├── main.rs           # 程序入口，启动 Silent 服务
+├── gateway/
+│   ├── mod.rs       # 网关模块入口
+│   ├── routes.rs    # 路由定义
+│   └── handlers.rs  # 请求处理器
+├── runtime/
+│   ├── mod.rs       # 运行时模块入口
+│   ├── executor.rs  # 函数执行器
+│   └── loader.rs    # 函数加载器
+├── scheduler/
+│   ├── mod.rs       # 调度器模块入口
+│   └── simple.rs    # 简单调度器实现
+└── functions/
+    ├── mod.rs       # 函数管理模块
+    └── registry.rs  # 函数注册表
+```
+
+### 代码风格
+- 使用 `rustfmt` 格式化代码
+- 每个函数都要有文档注释
+- 使用 `Result<T, E>` 进行错误处理
+- 异步函数使用 `async/await`
+- 结构体字段使用 `serde` 注解
+
+### 错误处理
+```rust
+// 使用统一的错误类型
+#[derive(Debug, thiserror::Error)]
+pub enum FluxError {
+    #[error("Function not found: {name}")]
+    FunctionNotFound { name: String },
+    #[error("Runtime error: {0}")]
+    Runtime(#[from] RuntimeError),
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+}
+
+pub type Result<T> = std::result::Result<T, FluxError>;
+```
+
+## MVP 功能要求
+
+### 第一阶段 - 基础调用
+- [ ] 启动 Silent web 服务
+- [ ] 接收 POST `/invoke/{function_name}` 请求
+- [ ] 执行预定义的 Rust 函数
+- [ ] 返回执行结果
+
+### 第二阶段 - 函数管理
+- [ ] 支持动态加载函数
+- [ ] 基础的函数注册机制
+- [ ] 简单的内存缓存
+
+### 第三阶段 - 调度优化
+- [ ] 函数实例管理
+- [ ] 基础的负载均衡
+- [ ] 错误处理和重试
+
+## 测试要求
+- 每个模块都要有单元测试
+- 提供集成测试用例
+- 在 `examples/` 目录下提供使用示例
+- 确保所有测试都能通过
+
+## 性能要求
+- 函数冷启动时间 < 100ms
+- 并发处理能力 > 1000 QPS
+- 内存使用 < 100MB（不包含用户函数）
+
+## 开发提示
+1. 先让程序跑起来，再考虑优化
+2. 使用 `cargo watch` 进行自动重编译
+3. 每完成一个功能就进行一次 commit
+4. 优先处理编译错误，再处理逻辑错误
+5. 多写 `println!` 或 `tracing::info!` 来调试
+6. 遇到复杂问题时，先写最简单的实现
+
+## 禁止事项
+- 不要偏离 MVP 目标，添加不必要的功能
+- 不要过早优化，先保证功能正确
+- 不要忽略错误处理
+- 不要写没有测试的代码
+- 不要破坏现有的目录结构
