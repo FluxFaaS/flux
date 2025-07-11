@@ -1,0 +1,14 @@
+[package]
+authors = ["Hubert Shelley <hubertshelley@163.com>"]
+edition = "2024"
+homepage = "https://github.com/FluxFaaS/flux"
+license = "Apache-2.0"
+name = "flux"
+readme = "./readme.md"
+repository = "https://github.com/FluxFaaS/flux"
+version = "0.1.0"
+
+[dependencies]
+serde = {version = "1.0", features = ["derive"]}
+silent = "2"
+tokio = {version = "1.0", features = ["full"]}
