@@ -3,75 +3,85 @@ use crate::scheduler::SimpleScheduler;
 use silent::prelude::*;
 use std::sync::Arc;
 
-/// 构建所有路由
-pub fn build_routes(scheduler: Arc<SimpleScheduler>) -> Vec<Route> {
-    vec![
-        // 健康检查
-        route::get("/health").to(handlers::health_check),
+pub fn build_routes(scheduler: Arc<SimpleScheduler>) -> RootRoute {
+    let mut root = RootRoute::new();
 
-        // 函数管理
-        route::post("/functions").to({
+    // 健康检查路由
+    let health_route = Route::new("health").get(handlers::health_check);
+    root.push(health_route);
+
+    // 函数管理路由
+    let functions_route = Route::new("functions")
+        .post({
             let scheduler = scheduler.clone();
             move |req| handlers::register_function(req, scheduler.clone())
-        }),
-
-        route::get("/functions").to({
+        })
+        .get({
             let scheduler = scheduler.clone();
             move |req| handlers::list_functions(req, scheduler.clone())
-        }),
+        });
+    root.push(functions_route);
 
-        route::get("/functions/:name").to({
+    // 单个函数操作路由
+    let function_route = Route::new("functions/:name")
+        .get({
             let scheduler = scheduler.clone();
             move |req| handlers::get_function(req, scheduler.clone())
-        }),
-
-        route::delete("/functions/:name").to({
+        })
+        .delete({
             let scheduler = scheduler.clone();
             move |req| handlers::delete_function(req, scheduler.clone())
-        }),
+        });
+    root.push(function_route);
 
-        // 函数调用
-        route::post("/invoke/:name").to({
-            let scheduler = scheduler.clone();
-            move |req| handlers::invoke_function(req, scheduler.clone())
-        }),
+    // 函数调用路由
+    let invoke_route = Route::new("invoke/:name").post({
+        let scheduler = scheduler.clone();
+        move |req| handlers::invoke_function(req, scheduler.clone())
+    });
+    root.push(invoke_route);
 
-        // 系统信息
-        route::get("/status").to({
-            let scheduler = scheduler.clone();
-            move |req| handlers::get_status(req, scheduler.clone())
-        }),
+    // 调度器状态路由
+    let status_route = Route::new("status").get({
+        let scheduler = scheduler.clone();
+        move |req| handlers::get_scheduler_status(req, scheduler.clone())
+    });
+    root.push(status_route);
 
-        // 扩展功能 - 从文件加载函数
-        route::post("/functions/load-file").to({
-            let scheduler = scheduler.clone();
-            move |req| handlers::load_function_from_file(req, scheduler.clone())
-        }),
+    // 文件加载路由
+    let load_file_route = Route::new("load/file").post({
+        let scheduler = scheduler.clone();
+        move |req| handlers::load_function_from_file(req, scheduler.clone())
+    });
+    root.push(load_file_route);
 
-        // 从目录批量加载函数
-        route::post("/functions/load-directory").to({
-            let scheduler = scheduler.clone();
-            move |req| handlers::load_functions_from_directory(req, scheduler.clone())
-        }),
+    // 目录加载路由
+    let load_dir_route = Route::new("load/directory").post({
+        let scheduler = scheduler.clone();
+        move |req| handlers::load_functions_from_directory(req, scheduler.clone())
+    });
+    root.push(load_dir_route);
 
-        // 缓存统计
-        route::get("/cache/stats").to({
-            let scheduler = scheduler.clone();
-            move |req| handlers::get_cache_stats(req, scheduler.clone())
-        }),
+    // 缓存统计路由
+    let cache_route = Route::new("cache/stats").get({
+        let scheduler = scheduler.clone();
+        move |req| handlers::get_cache_stats(req, scheduler.clone())
+    });
+    root.push(cache_route);
 
-        // 性能监控
-        route::get("/monitor/performance").to({
-            let scheduler = scheduler.clone();
-            move |req| handlers::get_performance_monitor(req, scheduler.clone())
-        }),
+    // 性能统计路由
+    let perf_route = Route::new("performance/stats").get({
+        let scheduler = scheduler.clone();
+        move |req| handlers::get_performance_stats(req, scheduler.clone())
+    });
+    root.push(perf_route);
 
-        // 重置监控数据
-        route::post("/monitor/reset").to({
-            let scheduler = scheduler.clone();
-            move |req| handlers::reset_performance_data(req, scheduler.clone())
-        }),
+    // 重置路由
+    let reset_route = Route::new("reset").post({
+        let scheduler = scheduler.clone();
+        move |req| handlers::reset_scheduler(req, scheduler.clone())
+    });
+    root.push(reset_route);
 
-
-    ]
+    root
 }

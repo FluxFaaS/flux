@@ -31,7 +31,7 @@ impl FluxGateway {
     }
 
     /// 构建路由
-    pub fn routes(&self) -> Vec<Route> {
+    pub fn routes(&self) -> RootRoute {
         routes::build_routes(self.scheduler.clone())
     }
 
@@ -46,7 +46,10 @@ impl FluxGateway {
             code: "return \"Hello, World!\"".to_string(),
             timeout_ms: Some(1000),
         });
-        registry.register(hello_fn).await.map_err(|e| anyhow::anyhow!("{}", e))?;
+        registry
+            .register(hello_fn)
+            .await
+            .map_err(|e| anyhow::anyhow!("{}", e))?;
 
         // 注册 echo 函数
         let echo_fn = FunctionMetadata::from_request(RegisterFunctionRequest {
@@ -55,7 +58,10 @@ impl FluxGateway {
             code: "return input".to_string(),
             timeout_ms: Some(1000),
         });
-        registry.register(echo_fn).await.map_err(|e| anyhow::anyhow!("{}", e))?;
+        registry
+            .register(echo_fn)
+            .await
+            .map_err(|e| anyhow::anyhow!("{}", e))?;
 
         // 注册 add 函数
         let add_fn = FunctionMetadata::from_request(RegisterFunctionRequest {
@@ -64,7 +70,10 @@ impl FluxGateway {
             code: "return a + b".to_string(),
             timeout_ms: Some(1000),
         });
-        registry.register(add_fn).await.map_err(|e| anyhow::anyhow!("{}", e))?;
+        registry
+            .register(add_fn)
+            .await
+            .map_err(|e| anyhow::anyhow!("{}", e))?;
 
         tracing::info!("Sample functions registered successfully");
         Ok(())
