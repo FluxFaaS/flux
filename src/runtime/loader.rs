@@ -82,6 +82,10 @@ impl FunctionLoader {
             description,
             code,
             timeout_ms,
+            version: None,
+            dependencies: None,
+            parameters: None,
+            return_type: None,
         };
 
         Ok(FunctionMetadata::from_request(req))

@@ -47,6 +47,10 @@ impl FluxGateway {
             description: Some("Hello World 函数".to_string()),
             code: "return \"Hello, World!\"".to_string(),
             timeout_ms: Some(1000),
+            version: None,
+            dependencies: None,
+            parameters: None,
+            return_type: None,
         });
         registry
             .register(hello_fn)
@@ -59,6 +63,10 @@ impl FluxGateway {
             description: Some("回声函数".to_string()),
             code: "return input".to_string(),
             timeout_ms: Some(1000),
+            version: None,
+            dependencies: None,
+            parameters: None,
+            return_type: None,
         });
         registry
             .register(echo_fn)
@@ -71,6 +79,10 @@ impl FluxGateway {
             description: Some("加法函数".to_string()),
             code: "return a + b".to_string(),
             timeout_ms: Some(1000),
+            version: None,
+            dependencies: None,
+            parameters: None,
+            return_type: None,
         });
         registry
             .register(add_fn)

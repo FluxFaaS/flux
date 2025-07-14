@@ -32,3 +32,9 @@ async-trait = "0.1"
 # 第二阶段新增 - 缓存支持
 lru = "0.12"
 dashmap = "6.0"
+# 第二阶段新增 - 文件监控支持
+notify = "6.1"
+md5 = "0.7"
+
+[dev-dependencies]
+tempfile = "3.8"
