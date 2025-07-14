@@ -1,6 +1,9 @@
+#![allow(dead_code)]
 use crate::functions::registry::FunctionRegistry;
 use crate::functions::{InvokeRequest, InvokeResponse, Result};
 use crate::runtime::SimpleRuntime;
+use crate::runtime::loader::FunctionLoader;
+use std::sync::Arc;
 
 pub mod simple;
 
@@ -17,6 +20,7 @@ pub trait Scheduler {
 pub struct SimpleScheduler {
     registry: FunctionRegistry,
     runtime: SimpleRuntime,
+    loader: Arc<FunctionLoader>,
 }
 
 impl SimpleScheduler {
@@ -24,20 +28,39 @@ impl SimpleScheduler {
         Self {
             registry: FunctionRegistry::new(),
             runtime: SimpleRuntime::new(),
+            loader: Arc::new(FunctionLoader::new()),
         }
     }
 
-    #[allow(dead_code)]
     pub fn with_registry(registry: FunctionRegistry) -> Self {
         Self {
             registry,
             runtime: SimpleRuntime::new(),
+            loader: Arc::new(FunctionLoader::new()),
+        }
+    }
+
+    pub fn with_loader(loader: Arc<FunctionLoader>) -> Self {
+        Self {
+            registry: FunctionRegistry::new(),
+            runtime: SimpleRuntime::new(),
+            loader,
         }
     }
 
     /// 获取函数注册表的引用
     pub fn registry(&self) -> &FunctionRegistry {
         &self.registry
+    }
+
+    /// 获取运行时的引用
+    pub fn runtime(&self) -> &SimpleRuntime {
+        &self.runtime
+    }
+
+    /// 获取函数加载器的引用
+    pub fn loader(&self) -> &Arc<FunctionLoader> {
+        &self.loader
     }
 }
 

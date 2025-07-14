@@ -8,6 +8,14 @@ readme = "./readme.md"
 repository = "https://github.com/FluxFaaS/flux"
 version = "0.1.0"
 
+[[bin]]
+name = "flux"
+path = "src/main.rs"
+
+[[bin]]
+name = "flux-cli"
+path = "src/bin/flux-cli.rs"
+
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -21,3 +29,12 @@ reqwest = { version = "0.11", features = ["json"] }
 scru128 = { version = "3.0", features = ["serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 async-trait = "0.1"
+# 第二阶段新增 - 缓存支持
+lru = "0.12"
+dashmap = "6.0"
+# 第二阶段新增 - 文件监控支持
+notify = "6.1"
+md5 = "0.7"
+
+[dev-dependencies]
+tempfile = "3.8"

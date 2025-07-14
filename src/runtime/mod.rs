@@ -1,18 +1,58 @@
+#![allow(dead_code)]
 use crate::functions::{
     ExecutionStatus, FluxError, FunctionMetadata, InvokeRequest, InvokeResponse, Result,
 };
+use crate::runtime::cache::FunctionCache;
+use crate::runtime::monitor::{ExecutionResult, PerformanceMonitor};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::time::timeout;
 
+pub mod cache;
 pub mod executor;
+pub mod loader;
+pub mod monitor;
+pub mod validator;
 
 /// 简单的函数执行器
 #[derive(Debug, Clone)]
-pub struct SimpleRuntime;
+pub struct SimpleRuntime {
+    /// 函数缓存
+    cache: Arc<FunctionCache>,
+    /// 性能监控器
+    monitor: Arc<PerformanceMonitor>,
+}
 
 impl SimpleRuntime {
     pub fn new() -> Self {
-        Self
+        Self {
+            cache: Arc::new(FunctionCache::default()),
+            monitor: Arc::new(PerformanceMonitor::new()),
+        }
+    }
+
+    pub fn with_cache(cache: Arc<FunctionCache>) -> Self {
+        Self {
+            cache,
+            monitor: Arc::new(PerformanceMonitor::new()),
+        }
+    }
+
+    pub fn with_monitor(monitor: Arc<PerformanceMonitor>) -> Self {
+        Self {
+            cache: Arc::new(FunctionCache::default()),
+            monitor,
+        }
+    }
+
+    /// 获取性能监控器引用
+    pub fn monitor(&self) -> &Arc<PerformanceMonitor> {
+        &self.monitor
+    }
+
+    /// 获取缓存引用
+    pub fn cache(&self) -> &Arc<FunctionCache> {
+        &self.cache
     }
 
     /// 执行函数
@@ -25,6 +65,21 @@ impl SimpleRuntime {
 
         tracing::info!("Executing function: {}", function.name);
 
+        // 尝试从缓存获取编译后的函数
+        if let Some(_cached_function) = self.cache.get(&function.name).await {
+            tracing::debug!("Using cached version of function: {}", function.name);
+            // 可以在这里使用预编译的结果来优化执行
+        } else {
+            // 缓存函数以备下次使用
+            if let Err(e) = self
+                .cache
+                .put(function.name.clone(), function.clone())
+                .await
+            {
+                tracing::warn!("Failed to cache function {}: {}", function.name, e);
+            }
+        }
+
         // 设置执行超时
         let timeout_duration = Duration::from_millis(function.timeout_ms);
 
@@ -32,36 +87,80 @@ impl SimpleRuntime {
 
         let execution_time_ms = start_time.elapsed().as_millis() as u64;
 
-        match result {
+        let response = match result {
             Ok(Ok(output)) => {
                 tracing::info!(
                     "Function {} executed successfully in {}ms",
                     function.name,
                     execution_time_ms
                 );
-                Ok(InvokeResponse {
+
+                // 记录成功执行的性能数据
+                let execution_result = ExecutionResult {
+                    function_name: function.name.clone(),
+                    duration: start_time.elapsed(),
+                    success: true,
+                    memory_usage: 1024, // 估算值，实际项目中应该测量真实内存使用
+                    error_message: None,
+                };
+
+                if let Err(e) = self.monitor.record_execution(execution_result).await {
+                    tracing::warn!("Failed to record performance data: {}", e);
+                }
+
+                InvokeResponse {
                     output,
                     execution_time_ms,
                     status: ExecutionStatus::Success,
-                })
+                }
             }
             Ok(Err(e)) => {
                 tracing::error!("Function {} execution failed: {}", function.name, e);
-                Ok(InvokeResponse {
+
+                // 记录失败执行的性能数据
+                let execution_result = ExecutionResult {
+                    function_name: function.name.clone(),
+                    duration: start_time.elapsed(),
+                    success: false,
+                    memory_usage: 512, // 失败情况下的估算内存使用
+                    error_message: Some(e.to_string()),
+                };
+
+                if let Err(monitor_err) = self.monitor.record_execution(execution_result).await {
+                    tracing::warn!("Failed to record performance data: {}", monitor_err);
+                }
+
+                InvokeResponse {
                     output: serde_json::json!({"error": e.to_string()}),
                     execution_time_ms,
                     status: ExecutionStatus::Error(e.to_string()),
-                })
+                }
             }
             Err(_) => {
                 tracing::error!("Function {} execution timed out", function.name);
-                Ok(InvokeResponse {
+
+                // 记录超时执行的性能数据
+                let execution_result = ExecutionResult {
+                    function_name: function.name.clone(),
+                    duration: start_time.elapsed(),
+                    success: false,
+                    memory_usage: 256, // 超时情况下的估算内存使用
+                    error_message: Some("Execution timeout".to_string()),
+                };
+
+                if let Err(e) = self.monitor.record_execution(execution_result).await {
+                    tracing::warn!("Failed to record performance data: {}", e);
+                }
+
+                InvokeResponse {
                     output: serde_json::json!({"error": "Execution timeout"}),
                     execution_time_ms,
                     status: ExecutionStatus::Timeout,
-                })
+                }
             }
-        }
+        };
+
+        Ok(response)
     }
 
     /// 实际执行函数代码

@@ -1,5 +1,7 @@
 use super::{FluxError, FunctionMetadata, Result};
+use crate::runtime::loader::FunctionLoader;
 use std::collections::HashMap;
+use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -50,7 +52,6 @@ impl FunctionRegistry {
     }
 
     /// 删除函数
-    #[allow(dead_code)]
     pub async fn remove(&self, name: &str) -> Result<()> {
         let mut functions = self.functions.write().await;
         functions
@@ -64,17 +65,69 @@ impl FunctionRegistry {
     }
 
     /// 函数是否存在
-    #[allow(dead_code)]
     pub async fn exists(&self, name: &str) -> bool {
         let functions = self.functions.read().await;
         functions.contains_key(name)
     }
 
     /// 获取函数数量
-    #[allow(dead_code)]
     pub async fn count(&self) -> usize {
         let functions = self.functions.read().await;
         functions.len()
+    }
+
+    /// 从文件注册函数
+    pub async fn register_from_file<P: AsRef<Path>>(
+        &self,
+        path: P,
+        name: Option<String>,
+        description: Option<String>,
+        timeout_ms: Option<u64>,
+    ) -> Result<()> {
+        let loader = FunctionLoader::new();
+        let function = loader
+            .load_function_from_file(path, name, description, timeout_ms)
+            .await?;
+
+        // 验证函数代码
+        loader.validate_function_code(&function.code).await?;
+
+        self.register(function).await
+    }
+
+    /// 从目录批量注册函数
+    pub async fn register_from_directory<P: AsRef<Path>>(&self, dir_path: P) -> Result<usize> {
+        let loader = FunctionLoader::new();
+        let functions = loader.load_functions_from_directory(dir_path).await?;
+
+        let mut registered_count = 0;
+        for function in functions {
+            // 验证函数代码
+            if let Err(e) = loader.validate_function_code(&function.code).await {
+                tracing::warn!(
+                    "Skipping function {} due to validation error: {}",
+                    function.name,
+                    e
+                );
+                continue;
+            }
+
+            // 尝试注册函数，跳过已存在的函数
+            match self.register(function).await {
+                Ok(_) => {
+                    registered_count += 1;
+                }
+                Err(FluxError::FunctionAlreadyExists { name }) => {
+                    tracing::warn!("Function {} already exists, skipping", name);
+                }
+                Err(e) => {
+                    tracing::error!("Failed to register function: {}", e);
+                }
+            }
+        }
+
+        tracing::info!("Registered {} functions from directory", registered_count);
+        Ok(registered_count)
     }
 }
 
