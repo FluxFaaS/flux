@@ -161,7 +161,7 @@ Code: return "Hello, " + name + "!"
 - **错误处理**: thiserror + anyhow
 - **日志**: tracing
 - **时间处理**: chrono
-- **UUID**: uuid
+- **ID生成**: scru128
 
 ## 📦 项目结构
 

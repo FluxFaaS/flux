@@ -3,24 +3,30 @@ use crate::functions::{
     ExecutionStatus, FluxError, FunctionMetadata, InvokeRequest, InvokeResponse, Result,
 };
 use crate::runtime::cache::FunctionCache;
+use crate::runtime::compiler::{CompilerConfig, RustCompiler};
 use crate::runtime::monitor::{ExecutionResult, PerformanceMonitor};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::time::timeout;
 
 pub mod cache;
+pub mod compiler;
 pub mod executor;
 pub mod loader;
 pub mod monitor;
 pub mod validator;
 
 /// 简单的函数执行器
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct SimpleRuntime {
     /// 函数缓存
     cache: Arc<FunctionCache>,
     /// 性能监控器
     monitor: Arc<PerformanceMonitor>,
+    /// Rust代码编译器（可选）
+    compiler: Option<Arc<RustCompiler>>,
+    /// 是否启用真实编译
+    enable_compilation: bool,
 }
 
 impl SimpleRuntime {
@@ -28,6 +34,8 @@ impl SimpleRuntime {
         Self {
             cache: Arc::new(FunctionCache::default()),
             monitor: Arc::new(PerformanceMonitor::new()),
+            compiler: None,
+            enable_compilation: false,
         }
     }
 
@@ -35,6 +43,8 @@ impl SimpleRuntime {
         Self {
             cache,
             monitor: Arc::new(PerformanceMonitor::new()),
+            compiler: None,
+            enable_compilation: false,
         }
     }
 
@@ -42,7 +52,70 @@ impl SimpleRuntime {
         Self {
             cache: Arc::new(FunctionCache::default()),
             monitor,
+            compiler: None,
+            enable_compilation: false,
         }
+    }
+
+    /// 创建支持真实编译的运行时
+    pub fn new_with_compilation() -> anyhow::Result<Self> {
+        let config = CompilerConfig::default();
+        let compiler = RustCompiler::new(config)?;
+
+        Ok(Self {
+            cache: Arc::new(FunctionCache::default()),
+            monitor: Arc::new(PerformanceMonitor::new()),
+            compiler: Some(Arc::new(compiler)),
+            enable_compilation: true,
+        })
+    }
+
+    /// 使用自定义配置创建支持编译的运行时
+    pub fn new_with_compiler_config(config: CompilerConfig) -> anyhow::Result<Self> {
+        let compiler = RustCompiler::new(config)?;
+
+        Ok(Self {
+            cache: Arc::new(FunctionCache::default()),
+            monitor: Arc::new(PerformanceMonitor::new()),
+            compiler: Some(Arc::new(compiler)),
+            enable_compilation: true,
+        })
+    }
+
+    /// 启用或禁用编译
+    pub fn set_compilation_enabled(&mut self, enabled: bool) {
+        self.enable_compilation = enabled;
+    }
+
+    /// 检查是否支持编译
+    pub fn supports_compilation(&self) -> bool {
+        self.compiler.is_some() && self.enable_compilation
+    }
+
+    /// 使用真实编译执行函数
+    async fn execute_with_compilation(
+        &self,
+        function: &FunctionMetadata,
+        request: &InvokeRequest,
+    ) -> Result<serde_json::Value> {
+        let compiler = self
+            .compiler
+            .as_ref()
+            .ok_or_else(|| FluxError::Runtime("Compiler not available".to_string()))?;
+
+        // 编译函数
+        let compiled = compiler
+            .compile_function(function)
+            .await
+            .map_err(|e| FluxError::Runtime(format!("Compilation failed: {e}")))?;
+
+        // 执行编译后的函数
+        let response = compiler
+            .execute_compiled_function(&compiled, request)
+            .await
+            .map_err(|e| FluxError::Runtime(format!("Execution failed: {e}")))?;
+
+        Ok(response.output)
     }
 
     /// 获取性能监控器引用
@@ -169,9 +242,12 @@ impl SimpleRuntime {
         function: &FunctionMetadata,
         request: &InvokeRequest,
     ) -> Result<serde_json::Value> {
-        // MVP 阶段：简单的字符串处理示例
-        // 在真实环境中，这里应该是动态编译和执行用户代码
+        // 第三阶段：支持真实Rust代码编译和执行
+        if self.supports_compilation() {
+            return self.execute_with_compilation(function, request).await;
+        }
 
+        // 保留向后兼容：简单的字符串处理示例
         match function.name.as_str() {
             "hello" => {
                 // 示例：Hello World 函数
