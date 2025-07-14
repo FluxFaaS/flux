@@ -88,8 +88,7 @@ async fn run_interactive_cli() -> anyhow::Result<()> {
         println!("7. 🎯 查看缓存统计");
         println!("8. 📊 查看性能监控");
         println!("9. 🔄 重置监控数据");
-        println!("10. 🆔 演示 SCRU128 功能");
-        println!("11. 🚪 退出");
+        println!("10. 🚪 退出");
 
         print!("\nflux> ");
         io::stdout().flush()?;
@@ -108,8 +107,7 @@ async fn run_interactive_cli() -> anyhow::Result<()> {
             "7" => show_cache_statistics(&scheduler).await?,
             "8" => show_performance_monitor(&scheduler).await?,
             "9" => reset_performance_data(&scheduler).await?,
-            "10" => demonstrate_scru128_features(&scheduler).await?,
-            "11" | "q" | "quit" | "exit" => {
+            "10" | "q" | "quit" | "exit" => {
                 println!("👋 再见！");
                 break;
             }
@@ -359,71 +357,6 @@ async fn show_system_status(scheduler: &SimpleScheduler) -> anyhow::Result<()> {
             println!("   ❗ ID 顺序异常");
         }
     }
-
-    Ok(())
-}
-
-/// 演示 SCRU128 功能
-async fn demonstrate_scru128_features(_scheduler: &SimpleScheduler) -> anyhow::Result<()> {
-    println!("🆔 SCRU128 功能演示");
-    println!("===================");
-
-    // 创建几个测试函数来展示 ID 生成
-    println!("📦 正在创建测试函数以展示 SCRU128 特性...");
-
-    let test_functions = vec![
-        ("demo1", "演示函数 1"),
-        ("demo2", "演示函数 2"),
-        ("demo3", "演示函数 3"),
-    ];
-
-    let mut generated_ids = Vec::new();
-
-    for (name, desc) in test_functions {
-        let request = RegisterFunctionRequest {
-            name: format!("{}_{}", name, chrono::Utc::now().timestamp_millis()),
-            description: Some(desc.to_string()),
-            code: "return 'demo'".to_string(),
-            timeout_ms: Some(1000),
-        };
-
-        let metadata = FunctionMetadata::from_request(request);
-        let id = metadata.id;
-        generated_ids.push((metadata.name.clone(), id));
-
-        println!("   📦 {} -> ID: {}", metadata.name, id);
-
-        // 短暂延迟确保时间戳不同
-        tokio::time::sleep(tokio::time::Duration::from_millis(5)).await;
-    }
-
-    println!("\n🔍 SCRU128 特性分析:");
-    println!(
-        "   📏 ID 长度: {} 字符",
-        generated_ids[0].1.to_string().len()
-    );
-    println!("   🔤 编码方式: Base32");
-    println!("   ⏰ 包含时间戳: 是");
-    println!("   🔀 支持排序: 是");
-
-    // 验证排序特性
-    let id_strings: Vec<String> = generated_ids.iter().map(|(_, id)| id.to_string()).collect();
-    let mut sorted_ids = id_strings.clone();
-    sorted_ids.sort();
-
-    if id_strings == sorted_ids {
-        println!("   ✅ 时间有序性: 通过（生成顺序 = 排序顺序）");
-    } else {
-        println!("   ❗ 时间有序性: 异常");
-    }
-
-    println!("\n💡 SCRU128 优势:");
-    println!("   • 比 UUID 更短（25 vs 36 字符）");
-    println!("   • 时间有序，数据库索引友好");
-    println!("   • 分布式环境安全");
-    println!("   • URL 友好，无需转义");
-
-    println!("\n🗑️  注意：演示函数不会实际注册到系统中");
 
     Ok(())
 }

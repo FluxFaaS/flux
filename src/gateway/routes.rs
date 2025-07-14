@@ -72,10 +72,6 @@ pub fn build_routes(scheduler: Arc<SimpleScheduler>) -> Vec<Route> {
             move |req| handlers::reset_performance_data(req, scheduler.clone())
         }),
 
-        // SCRU128功能演示
-        route::get("/demo/scru128").to({
-            let scheduler = scheduler.clone();
-            move |req| handlers::demonstrate_scru128(req, scheduler.clone())
-        }),
+
     ]
 }

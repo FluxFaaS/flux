@@ -65,7 +65,6 @@ FLUX_SERVER_URL=http://localhost:8080 cargo run --bin flux-cli
 | 查看缓存统计 | ✅ | ✅ (待服务器) |
 | 查看性能监控 | ✅ | ✅ (待服务器) |
 | 重置监控数据 | ✅ | ✅ (待服务器) |
-| SCRU128演示 | ✅ | ✅ (待服务器) |
 
 ## 环境变量
 

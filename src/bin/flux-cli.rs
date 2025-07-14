@@ -1,9 +1,3 @@
-#![allow(clippy::uninlined_format_args)]
-#![allow(clippy::single_component_path_imports)]
-#![allow(clippy::redundant_pattern_matching)]
-#![allow(clippy::needless_borrows_for_generic_args)]
-
-use reqwest;
 use serde_json::{Value, Value::Null, json};
 use std::env;
 use std::io::{self, Write};
@@ -17,13 +11,13 @@ async fn main() -> anyhow::Result<()> {
     let client = reqwest::Client::new();
 
     // 检查服务器连接
-    if let Err(_) = check_server_health(&client, &base_url).await {
-        eprintln!("❌ 无法连接到FluxFaaS服务器: {}", base_url);
+    if (check_server_health(&client, &base_url).await).is_err() {
+        eprintln!("❌ 无法连接到FluxFaaS服务器: {base_url}");
         eprintln!("💡 请确保服务器正在运行: cargo run --bin flux");
         return Ok(());
     }
 
-    println!("✅ 已连接到FluxFaaS服务器: {}", base_url);
+    println!("✅ 已连接到FluxFaaS服务器: {base_url}");
 
     loop {
         println!("\n🌟 FluxFaaS CLI客户端 (HTTP模式)");
@@ -37,8 +31,7 @@ async fn main() -> anyhow::Result<()> {
         println!("7. 🎯 查看缓存统计");
         println!("8. 📊 查看性能监控");
         println!("9. 🔄 重置监控数据");
-        println!("10. 🆔 演示 SCRU128 功能");
-        println!("11. 🚪 退出");
+        println!("10. 🚪 退出");
 
         print!("\nflux-cli> ");
         io::stdout().flush()?;
@@ -57,8 +50,7 @@ async fn main() -> anyhow::Result<()> {
             "7" => show_cache_statistics(&client, &base_url).await?,
             "8" => show_performance_monitor(&client, &base_url).await?,
             "9" => reset_performance_data(&client, &base_url).await?,
-            "10" => demonstrate_scru128_features(&client, &base_url).await?,
-            "11" | "q" | "quit" | "exit" => {
+            "10" | "q" | "quit" | "exit" => {
                 println!("👋 再见！");
                 break;
             }
@@ -71,7 +63,7 @@ async fn main() -> anyhow::Result<()> {
 
 /// 检查服务器健康状态
 async fn check_server_health(client: &reqwest::Client, base_url: &str) -> anyhow::Result<()> {
-    let response = client.get(&format!("{}/health", base_url)).send().await?;
+    let response = client.get(format!("{base_url}/health")).send().await?;
 
     if response.status().is_success() {
         Ok(())
@@ -82,10 +74,7 @@ async fn check_server_health(client: &reqwest::Client, base_url: &str) -> anyhow
 
 /// 列出所有函数
 async fn list_functions(client: &reqwest::Client, base_url: &str) -> anyhow::Result<()> {
-    let response = client
-        .get(&format!("{}/functions", base_url))
-        .send()
-        .await?;
+    let response = client.get(format!("{base_url}/functions")).send().await?;
 
     if !response.status().is_success() {
         println!("❌ 获取函数列表失败: {}", response.status());
@@ -109,8 +98,8 @@ async fn list_functions(client: &reqwest::Client, base_url: &str) -> anyhow::Res
             let timeout = func["timeout_ms"].as_u64().unwrap_or(0);
 
             println!("{}. {} - {}", i + 1, name, description);
-            println!("   🆔 SCRU128 ID: {}", id);
-            println!("   ⏱️  Timeout: {}ms", timeout);
+            println!("   🆔 SCRU128 ID: {id}");
+            println!("   ⏱️  Timeout: {timeout}ms");
             println!();
         }
         println!("总计: {} 个函数", functions.len());
@@ -122,10 +111,7 @@ async fn list_functions(client: &reqwest::Client, base_url: &str) -> anyhow::Res
 /// 调用函数
 async fn invoke_function(client: &reqwest::Client, base_url: &str) -> anyhow::Result<()> {
     // 先获取函数列表
-    let response = client
-        .get(&format!("{}/functions", base_url))
-        .send()
-        .await?;
+    let response = client.get(format!("{base_url}/functions")).send().await?;
 
     if !response.status().is_success() {
         println!("❌ 获取函数列表失败");
@@ -174,14 +160,14 @@ async fn invoke_function(client: &reqwest::Client, base_url: &str) -> anyhow::Re
         Err(_) => json!(input_data.trim()),
     };
 
-    println!("🚀 正在调用函数 '{}'...", function_name);
+    println!("🚀 正在调用函数 '{function_name}'...");
 
     let invoke_request = json!({
         "input": input_json
     });
 
     let response = client
-        .post(&format!("{}/invoke/{}", base_url, function_name))
+        .post(format!("{base_url}/invoke/{function_name}"))
         .json(&invoke_request)
         .send()
         .await?;
@@ -192,7 +178,7 @@ async fn invoke_function(client: &reqwest::Client, base_url: &str) -> anyhow::Re
         println!("📤 输出: {}", serde_json::to_string_pretty(&result)?);
     } else {
         let error_text = response.text().await?;
-        println!("❌ 函数执行失败: {}", error_text);
+        println!("❌ 函数执行失败: {error_text}");
     }
 
     Ok(())
@@ -244,23 +230,23 @@ async fn register_new_function(client: &reqwest::Client, base_url: &str) -> anyh
     });
 
     let response = client
-        .post(&format!("{}/functions", base_url))
+        .post(format!("{base_url}/functions"))
         .json(&register_request)
         .send()
         .await?;
 
     if response.status().is_success() {
         let result: Value = response.json().await?;
-        println!("✅ 函数 '{}' 注册成功!", name);
+        println!("✅ 函数 '{name}' 注册成功!");
         if let Some(function_data) = result.get("function") {
             if let Some(id) = function_data["id"].as_str() {
-                println!("   🆔 分配的 SCRU128 ID: {}", id);
+                println!("   🆔 分配的 SCRU128 ID: {id}");
                 println!("   💡 此 ID 包含时间信息，支持自然排序");
             }
         }
     } else {
         let error_text = response.text().await?;
-        println!("❌ 函数注册失败: {}", error_text);
+        println!("❌ 函数注册失败: {error_text}");
     }
 
     Ok(())
@@ -309,17 +295,17 @@ async fn load_function_from_file(client: &reqwest::Client, base_url: &str) -> an
     println!("📤 正在从文件加载函数...");
 
     let response = client
-        .post(&format!("{}/functions/load-file", base_url))
+        .post(format!("{base_url}/functions/load-file"))
         .json(&load_request)
         .send()
         .await?;
 
     if response.status().is_success() {
-        println!("✅ 函数从文件 '{}' 加载成功!", file_path);
+        println!("✅ 函数从文件 '{file_path}' 加载成功!");
         println!("💡 函数已通过安全验证并注册到系统中");
     } else {
         let error_text = response.text().await?;
-        println!("❌ 函数加载失败: {}", error_text);
+        println!("❌ 函数加载失败: {error_text}");
         println!("💡 请检查文件路径和文件内容是否正确");
     }
 
@@ -351,7 +337,7 @@ async fn load_functions_from_directory(
     });
 
     let response = client
-        .post(&format!("{}/functions/load-directory", base_url))
+        .post(format!("{base_url}/functions/load-directory"))
         .json(&load_request)
         .send()
         .await?;
@@ -361,17 +347,17 @@ async fn load_functions_from_directory(
         if let Some(data) = result.get("data") {
             if let Some(count) = data["functions_loaded"].as_u64() {
                 if count > 0 {
-                    println!("✅ 成功从目录 '{}' 加载了 {} 个函数!", dir_path, count);
+                    println!("✅ 成功从目录 '{dir_path}' 加载了 {count} 个函数!");
                     println!("💡 所有函数都已通过安全验证并注册到系统中");
                 } else {
-                    println!("⚠️  目录 '{}' 中没有找到有效的函数文件", dir_path);
+                    println!("⚠️  目录 '{dir_path}' 中没有找到有效的函数文件");
                     println!("💡 请确保目录中包含 .rs 文件且格式正确");
                 }
             }
         }
     } else {
         let error_text = response.text().await?;
-        println!("❌ 批量加载失败: {}", error_text);
+        println!("❌ 批量加载失败: {error_text}");
         println!("💡 请检查目录路径是否正确");
     }
 
@@ -380,7 +366,7 @@ async fn load_functions_from_directory(
 
 /// 显示系统状态
 async fn show_system_status(client: &reqwest::Client, base_url: &str) -> anyhow::Result<()> {
-    let response = client.get(&format!("{}/status", base_url)).send().await?;
+    let response = client.get(format!("{base_url}/status")).send().await?;
 
     if !response.status().is_success() {
         println!("❌ 获取系统状态失败");
@@ -393,7 +379,7 @@ async fn show_system_status(client: &reqwest::Client, base_url: &str) -> anyhow:
     println!("==================");
 
     if let Some(functions) = data["functions"]["total"].as_u64() {
-        println!("🔧 已注册函数数量: {}", functions);
+        println!("🔧 已注册函数数量: {functions}");
     }
 
     println!("🆔 ID 系统: SCRU128 (时间有序)");
@@ -410,7 +396,7 @@ async fn show_system_status(client: &reqwest::Client, base_url: &str) -> anyhow:
     }
 
     if let Some(timestamp) = data["timestamp"].as_str() {
-        println!("📅 状态时间: {}", timestamp);
+        println!("📅 状态时间: {timestamp}");
     }
 
     Ok(())
@@ -418,10 +404,7 @@ async fn show_system_status(client: &reqwest::Client, base_url: &str) -> anyhow:
 
 /// 显示缓存统计信息
 async fn show_cache_statistics(client: &reqwest::Client, base_url: &str) -> anyhow::Result<()> {
-    let response = client
-        .get(&format!("{}/cache/stats", base_url))
-        .send()
-        .await?;
+    let response = client.get(format!("{base_url}/cache/stats")).send().await?;
 
     if !response.status().is_success() {
         println!("❌ 获取缓存统计失败");
@@ -439,26 +422,26 @@ async fn show_cache_statistics(client: &reqwest::Client, base_url: &str) -> anyh
             println!("  🎯 缓存命中率: {:.2}%", hit_rate * 100.0);
         }
         if let Some(hits) = stats["hits"].as_u64() {
-            println!("  ✅ 命中次数: {}", hits);
+            println!("  ✅ 命中次数: {hits}");
         }
         if let Some(misses) = stats["misses"].as_u64() {
-            println!("  ❌ 未命中次数: {}", misses);
+            println!("  ❌ 未命中次数: {misses}");
         }
         if let Some(size) = stats["size"].as_u64() {
-            println!("  📏 当前缓存大小: {} 个函数", size);
+            println!("  📏 当前缓存大小: {size} 个函数");
         }
     }
 
     if let Some(memory) = data["data"]["memory_usage"].as_object() {
         println!("\n💾 内存使用:");
         if let Some(current_kb) = memory["current_kb"].as_f64() {
-            println!("  🔍 当前使用: {:.2} KB", current_kb);
+            println!("  🔍 当前使用: {current_kb:.2} KB");
         }
         if let Some(max_mb) = memory["max_mb"].as_f64() {
-            println!("  📏 最大限制: {:.2} MB", max_mb);
+            println!("  📏 最大限制: {max_mb:.2} MB");
         }
         if let Some(usage_percent) = memory["usage_percent"].as_f64() {
-            println!("  📊 使用率: {:.2}%", usage_percent);
+            println!("  📊 使用率: {usage_percent:.2}%");
         }
     }
 
@@ -468,7 +451,7 @@ async fn show_cache_statistics(client: &reqwest::Client, base_url: &str) -> anyh
 /// 显示性能监控信息
 async fn show_performance_monitor(client: &reqwest::Client, base_url: &str) -> anyhow::Result<()> {
     let response = client
-        .get(&format!("{}/monitor/performance", base_url))
+        .get(format!("{base_url}/monitor/performance"))
         .send()
         .await?;
 
@@ -490,22 +473,22 @@ async fn show_performance_monitor(client: &reqwest::Client, base_url: &str) -> a
                 "critical" => "❤️",
                 _ => "❓",
             };
-            println!("🏥 系统健康状态: {} {}", health_icon, health);
+            println!("🏥 系统健康状态: {health_icon} {health}");
         }
 
         if let Some(global) = monitor_data["global_stats"].as_object() {
             println!("\n📈 全局统计:");
             if let Some(total) = global["total_requests"].as_u64() {
-                println!("  📝 总请求数: {}", total);
+                println!("  📝 总请求数: {total}");
             }
             if let Some(success) = global["total_success"].as_u64() {
-                println!("  ✅ 成功次数: {}", success);
+                println!("  ✅ 成功次数: {success}");
             }
             if let Some(failures) = global["total_failures"].as_u64() {
-                println!("  ❌ 失败次数: {}", failures);
+                println!("  ❌ 失败次数: {failures}");
             }
             if let Some(rate) = global["success_rate"].as_f64() {
-                println!("  🎯 成功率: {:.2}%", rate);
+                println!("  🎯 成功率: {rate:.2}%");
             }
         }
 
@@ -539,7 +522,7 @@ async fn reset_performance_data(client: &reqwest::Client, base_url: &str) -> any
 
     if confirmation == "y" || confirmation == "yes" {
         let response = client
-            .post(&format!("{}/monitor/reset", base_url))
+            .post(format!("{base_url}/monitor/reset"))
             .send()
             .await?;
 
@@ -548,74 +531,10 @@ async fn reset_performance_data(client: &reqwest::Client, base_url: &str) -> any
             println!("💡 新的统计将从现在开始重新计算");
         } else {
             let error_text = response.text().await?;
-            println!("❌ 重置失败: {}", error_text);
+            println!("❌ 重置失败: {error_text}");
         }
     } else {
         println!("❌ 重置操作已取消");
-    }
-
-    Ok(())
-}
-
-/// 演示 SCRU128 功能
-async fn demonstrate_scru128_features(
-    client: &reqwest::Client,
-    base_url: &str,
-) -> anyhow::Result<()> {
-    let response = client
-        .get(&format!("{}/demo/scru128", base_url))
-        .send()
-        .await?;
-
-    if !response.status().is_success() {
-        println!("❌ 获取SCRU128演示失败");
-        return Ok(());
-    }
-
-    let data: Value = response.json().await?;
-
-    println!("🆔 SCRU128 功能演示");
-    println!("===================");
-
-    if let Some(demo_data) = data["data"].as_object() {
-        if let Some(functions) = demo_data["generated_functions"].as_array() {
-            println!("📦 生成的演示函数:");
-            for func in functions {
-                if let (Some(name), Some(id)) = (func["name"].as_str(), func["id"].as_str()) {
-                    println!("   📦 {} -> ID: {}", name, id);
-                }
-            }
-        }
-
-        if let Some(analysis) = demo_data["analysis"].as_object() {
-            println!("\n🔍 SCRU128 特性分析:");
-            if let Some(length) = analysis["id_length"].as_u64() {
-                println!("   📏 ID 长度: {} 字符", length);
-            }
-            if let Some(encoding) = analysis["encoding"].as_str() {
-                println!("   🔤 编码方式: {}", encoding);
-            }
-            if let Some(ordered) = analysis["time_ordered"].as_bool() {
-                if ordered {
-                    println!("   ✅ 时间有序性: 通过（生成顺序 = 排序顺序）");
-                } else {
-                    println!("   ❗ 时间有序性: 异常");
-                }
-            }
-        }
-
-        if let Some(advantages) = demo_data["advantages"].as_array() {
-            println!("\n💡 SCRU128 优势:");
-            for advantage in advantages {
-                if let Some(text) = advantage.as_str() {
-                    println!("   • {}", text);
-                }
-            }
-        }
-
-        if let Some(note) = demo_data["note"].as_str() {
-            println!("\n🗑️  注意：{}", note);
-        }
     }
 
     Ok(())
