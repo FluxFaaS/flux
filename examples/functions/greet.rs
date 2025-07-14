@@ -1,4 +1,9 @@
-// 问候函数 - 根据输入的名字返回个性化问候
+// 问候函数
 fn greet(name: &str) -> String {
-    return "Hello, " + name + "! Welcome to FluxFaaS!";
+    return format!("Hello, {}! Welcome to FluxFaaS!", name);
+}
+
+fn main() {
+    let result = greet("World");
+    println!("{}", result);
 }

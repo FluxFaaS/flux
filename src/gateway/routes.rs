@@ -15,13 +15,13 @@ pub fn build_routes() -> RootRoute {
     root.push(functions_route);
 
     // 单个函数操作路由
-    let function_route = Route::new("functions/:name")
+    let function_route = Route::new("functions/<name>")
         .get(handlers::get_function)
         .delete(handlers::delete_function);
     root.push(function_route);
 
     // 函数调用路由
-    let invoke_route = Route::new("invoke/:name").post(handlers::invoke_function);
+    let invoke_route = Route::new("invoke/<name>").post(handlers::invoke_function);
     root.push(invoke_route);
 
     // 调度器状态路由
