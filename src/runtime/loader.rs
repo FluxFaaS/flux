@@ -5,6 +5,7 @@ use tokio::fs;
 
 /// 动态函数加载器
 #[derive(Debug, Clone)]
+
 pub struct FunctionLoader {
     validator: FunctionValidator,
 }
@@ -18,7 +19,6 @@ impl FunctionLoader {
     }
 
     /// 创建带自定义验证器的函数加载器
-    #[allow(dead_code)]
     pub fn with_validator(validator: FunctionValidator) -> Self {
         Self { validator }
     }

@@ -4,7 +4,6 @@ use crate::functions::{FunctionMetadata, InvokeRequest, InvokeResponse, Result};
 #[async_trait::async_trait]
 pub trait Executor {
     /// 执行函数
-    #[allow(dead_code)]
     async fn execute(
         &self,
         function: &FunctionMetadata,

@@ -40,6 +40,7 @@ pub struct FunctionStats {
 
 /// 全局统计信息
 #[derive(Debug, Clone, Default)]
+
 pub struct GlobalStats {
     /// 系统启动时间
     pub start_time: Option<Instant>,
@@ -50,19 +51,18 @@ pub struct GlobalStats {
     /// 总失败数
     pub total_failures: u64,
     /// 活跃函数数量
-    #[allow(dead_code)]
     pub active_functions: u64,
     /// 系统峰值内存
     pub peak_system_memory: u64,
     /// 当前系统内存使用
     pub current_system_memory: u64,
     /// 最后重置时间
-    #[allow(dead_code)]
     pub last_reset: Option<Instant>,
 }
 
 /// 执行结果统计
 #[derive(Debug, Clone)]
+
 pub struct ExecutionResult {
     /// 函数名称
     pub function_name: String,
@@ -73,12 +73,12 @@ pub struct ExecutionResult {
     /// 内存使用（字节）
     pub memory_usage: u64,
     /// 错误信息（如果有）
-    #[allow(dead_code)]
     pub error_message: Option<String>,
 }
 
 /// 性能报告
 #[derive(Debug, Clone)]
+
 pub struct PerformanceReport {
     /// 报告生成时间
     pub generated_at: Instant,
@@ -94,6 +94,7 @@ pub struct PerformanceReport {
 
 /// 系统健康状态
 #[derive(Debug, Clone, PartialEq)]
+
 pub enum HealthStatus {
     /// 健康
     Healthy,
@@ -129,7 +130,6 @@ impl PerformanceMonitor {
     }
 
     /// 获取函数统计信息
-    #[allow(dead_code)]
     pub async fn get_function_stats(&self, function_name: &str) -> Option<FunctionStats> {
         let stats = self.stats.read().await;
         stats.get(function_name).cloned()

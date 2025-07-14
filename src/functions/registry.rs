@@ -52,7 +52,6 @@ impl FunctionRegistry {
     }
 
     /// 删除函数
-    #[allow(dead_code)]
     pub async fn remove(&self, name: &str) -> Result<()> {
         let mut functions = self.functions.write().await;
         functions
@@ -66,14 +65,12 @@ impl FunctionRegistry {
     }
 
     /// 函数是否存在
-    #[allow(dead_code)]
     pub async fn exists(&self, name: &str) -> bool {
         let functions = self.functions.read().await;
         functions.contains_key(name)
     }
 
     /// 获取函数数量
-    #[allow(dead_code)]
     pub async fn count(&self) -> usize {
         let functions = self.functions.read().await;
         functions.len()

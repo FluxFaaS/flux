@@ -4,7 +4,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 /// 负载均衡策略
-#[allow(dead_code)]
+
 #[derive(Debug, Clone)]
 pub enum LoadBalanceStrategy {
     RoundRobin,
@@ -21,7 +21,6 @@ pub struct AdvancedScheduler {
 }
 
 impl AdvancedScheduler {
-    #[allow(dead_code)]
     pub fn new(strategy: LoadBalanceStrategy) -> Self {
         Self {
             scheduler: SimpleScheduler::new(),
@@ -31,7 +30,6 @@ impl AdvancedScheduler {
     }
 
     /// 获取当前活跃执行数
-    #[allow(dead_code)]
     pub async fn active_executions(&self) -> u64 {
         *self.active_executions.lock().await
     }

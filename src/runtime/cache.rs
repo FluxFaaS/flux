@@ -9,10 +9,8 @@ use tokio::sync::RwLock;
 #[derive(Debug, Clone)]
 pub struct CachedFunction {
     /// 函数元数据
-    #[allow(dead_code)]
     pub metadata: FunctionMetadata,
     /// 编译后的代码（简化版本，实际应该是编译结果）
-    #[allow(dead_code)]
     pub compiled_code: CompiledCode,
     /// 创建时间
     pub created_at: Instant,
@@ -32,7 +30,6 @@ pub struct CompiledCode {
     /// 解析后的表达式树（简化版本）
     pub parsed_expressions: Vec<String>,
     /// 编译时间戳
-    #[allow(dead_code)]
     pub compiled_at: u64,
 }
 
@@ -165,7 +162,6 @@ impl FunctionCache {
     }
 
     /// 移除缓存的函数
-    #[allow(dead_code)]
     pub async fn remove(&self, function_name: &str) -> bool {
         let mut cache = self.cache.write().await;
         let mut stats = self.stats.write().await;
@@ -181,7 +177,6 @@ impl FunctionCache {
     }
 
     /// 清空缓存
-    #[allow(dead_code)]
     pub async fn clear(&self) {
         let mut cache = self.cache.write().await;
         let mut stats = self.stats.write().await;
@@ -214,7 +209,6 @@ impl FunctionCache {
     }
 
     /// 清理过期的缓存条目
-    #[allow(dead_code)]
     pub async fn cleanup_expired(&self) -> usize {
         let mut cache = self.cache.write().await;
         let mut stats = self.stats.write().await;

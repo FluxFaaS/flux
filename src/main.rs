@@ -26,8 +26,12 @@ async fn main() -> anyhow::Result<()> {
     // 预注册示例函数
     register_sample_functions(&scheduler).await?;
 
-    // 构建路由
-    let routes = build_routes(scheduler);
+    // 创建配置并注入 scheduler
+    let mut configs = Configs::default();
+    configs.insert(scheduler);
+
+    // 构建路由（不再需要传递 scheduler）
+    let routes = build_routes();
 
     // 配置服务器地址
     let addr: SocketAddr = "127.0.0.1:3000".parse()?;
@@ -41,17 +45,21 @@ async fn main() -> anyhow::Result<()> {
     info!("  DELETE /functions/:name         - Delete function");
     info!("  POST /invoke/:name              - Invoke function");
     info!("  GET  /status                    - System status");
-    info!("  POST /functions/load-file       - Load function from file");
-    info!("  POST /functions/load-directory  - Load functions from directory");
+    info!("  POST /load/file                 - Load function from file");
+    info!("  POST /load/directory            - Load functions from directory");
     info!("  GET  /cache/stats               - Cache statistics");
-    info!("  GET  /monitor/performance       - Performance monitoring");
-    info!("  POST /monitor/reset             - Reset monitoring data");
+    info!("  GET  /performance/stats         - Performance statistics");
+    info!("  POST /reset                     - Reset scheduler");
     info!("");
     info!("💡 Use 'flux-cli' command to interact with the server");
     info!("🚀 Server is ready to accept requests!");
 
-    // 启动 HTTP 服务器
-    Server::new().bind(addr).serve(routes).await;
+    // 启动 HTTP 服务器，使用 with_configs 注入配置
+    Server::new()
+        .with_configs(configs)
+        .bind(addr)
+        .serve(routes)
+        .await;
 
     Ok(())
 }

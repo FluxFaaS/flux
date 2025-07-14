@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use chrono::{DateTime, Utc};
 use scru128::Scru128Id;
 use serde::{Deserialize, Serialize};
@@ -23,7 +24,7 @@ pub struct InvokeResponse {
 pub enum ExecutionStatus {
     Success,
     Error(String),
-    #[allow(dead_code)]
+
     Timeout,
 }
 
@@ -61,7 +62,6 @@ pub enum FluxError {
     Runtime(String),
 
     #[error("Execution timeout")]
-    #[allow(dead_code)]
     Timeout,
 
     #[error("Serialization error: {0}")]
@@ -75,21 +75,18 @@ pub enum FluxError {
 
     // 第二阶段新增错误类型
     #[error("Function compilation failed: {0}")]
-    #[allow(dead_code)]
     CompilationError(String),
 
     #[error("Function validation failed: {reason}")]
     ValidationError { reason: String },
 
     #[error("Cache error: {0}")]
-    #[allow(dead_code)]
     CacheError(String),
 }
 
 pub type Result<T> = std::result::Result<T, FluxError>;
 
 impl FunctionMetadata {
-    #[allow(dead_code)]
     pub fn new(name: String, code: String) -> Self {
         let now = Utc::now();
         Self {

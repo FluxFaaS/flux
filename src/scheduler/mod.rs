@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::functions::registry::FunctionRegistry;
 use crate::functions::{InvokeRequest, InvokeResponse, Result};
 use crate::runtime::SimpleRuntime;
@@ -27,7 +28,6 @@ impl SimpleScheduler {
         }
     }
 
-    #[allow(dead_code)]
     pub fn with_registry(registry: FunctionRegistry) -> Self {
         Self {
             registry,

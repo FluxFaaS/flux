@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::functions::{
     ExecutionStatus, FluxError, FunctionMetadata, InvokeRequest, InvokeResponse, Result,
 };
@@ -30,7 +31,6 @@ impl SimpleRuntime {
         }
     }
 
-    #[allow(dead_code)]
     pub fn with_cache(cache: Arc<FunctionCache>) -> Self {
         Self {
             cache,
@@ -38,7 +38,6 @@ impl SimpleRuntime {
         }
     }
 
-    #[allow(dead_code)]
     pub fn with_monitor(monitor: Arc<PerformanceMonitor>) -> Self {
         Self {
             cache: Arc::new(FunctionCache::default()),

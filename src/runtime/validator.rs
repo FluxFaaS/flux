@@ -6,9 +6,9 @@ use std::time::{Duration, Instant};
 
 /// 函数代码验证器
 #[derive(Debug, Clone)]
+
 pub struct FunctionValidator {
     /// 允许的函数名模式
-    #[allow(dead_code)]
     allowed_patterns: Vec<String>,
     /// 禁止的关键字
     forbidden_keywords: HashSet<String>,
@@ -24,18 +24,15 @@ pub struct FunctionValidator {
 
 /// 函数复杂度分析结果
 #[derive(Debug, Clone)]
+
 pub struct ComplexityAnalysis {
     /// 函数数量
-    #[allow(dead_code)]
     pub function_count: usize,
     /// 循环数量
-    #[allow(dead_code)]
     pub loop_count: usize,
     /// 条件分支数量
-    #[allow(dead_code)]
     pub branch_count: usize,
     /// 嵌套深度
-    #[allow(dead_code)]
     pub nesting_depth: usize,
     /// 总复杂度分数
     pub complexity_score: usize,
@@ -43,6 +40,7 @@ pub struct ComplexityAnalysis {
 
 /// 安全检查结果
 #[derive(Debug, Clone)]
+
 pub struct SecurityAnalysis {
     /// 发现的安全问题
     pub security_issues: Vec<SecurityIssue>,
@@ -54,22 +52,21 @@ pub struct SecurityAnalysis {
 
 /// 安全问题类型
 #[derive(Debug, Clone)]
+
 pub struct SecurityIssue {
     /// 问题类型
     pub issue_type: SecurityIssueType,
     /// 问题描述
-    #[allow(dead_code)]
     pub description: String,
     /// 发现位置（行号）
-    #[allow(dead_code)]
     pub line_number: Option<usize>,
     /// 问题代码片段
-    #[allow(dead_code)]
     pub code_snippet: Option<String>,
 }
 
 /// 安全问题类型枚举
 #[derive(Debug, Clone, PartialEq)]
+
 pub enum SecurityIssueType {
     /// 危险系统调用
     DangerousSystemCall,
@@ -89,6 +86,7 @@ pub enum SecurityIssueType {
 
 /// 风险等级
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
+
 pub enum RiskLevel {
     /// 低风险
     Low,
@@ -183,7 +181,6 @@ impl FunctionValidator {
     }
 
     /// 创建自定义配置的验证器
-    #[allow(dead_code)]
     pub fn with_config(
         max_code_length: usize,
         max_complexity: usize,
