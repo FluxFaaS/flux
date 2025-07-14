@@ -14,6 +14,8 @@ pub mod compiler;
 pub mod executor;
 pub mod loader;
 pub mod monitor;
+pub mod resource;
+pub mod sandbox;
 pub mod validator;
 
 /// 简单的函数执行器

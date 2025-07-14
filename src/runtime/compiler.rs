@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use libloading::{Library, Symbol};
-use serde::{Deserialize, Serialize};
+
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
@@ -27,8 +27,8 @@ pub struct CompiledFunction {
     pub compile_time_ms: u64,
 }
 
-/// 编译配置
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// 编译器配置
+#[derive(Debug, Clone)]
 pub struct CompilerConfig {
     /// 编译器路径（默认使用系统rustc）
     pub rustc_path: Option<PathBuf>,
@@ -42,6 +42,8 @@ pub struct CompilerConfig {
     pub cache_dir: PathBuf,
     /// 最大缓存数量
     pub max_cache_entries: usize,
+    /// 自定义Rust编译目标路径
+    pub rust_target_dir: Option<PathBuf>,
 }
 
 impl Default for CompilerConfig {
@@ -53,6 +55,7 @@ impl Default for CompilerConfig {
             compile_timeout_secs: 30,
             cache_dir: PathBuf::from("./flux_cache"),
             max_cache_entries: 100,
+            rust_target_dir: None,
         }
     }
 }
@@ -338,11 +341,17 @@ chrono = {{ version = "0.4", features = ["serde"] }}
         let mut cmd = Command::new("cargo");
         cmd.arg("build")
             .arg("--release")
-            .arg("--target-dir")
-            .arg(work_dir.join("target"))
             .current_dir(work_dir)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
+
+        // 配置目标目录
+        if let Some(ref custom_target) = self.config.rust_target_dir {
+            let expanded_path = shellexpand::tilde(&custom_target.to_string_lossy()).to_string();
+            cmd.env("CARGO_TARGET_DIR", expanded_path);
+        } else {
+            cmd.arg("--target-dir").arg(work_dir.join("target"));
+        }
 
         tracing::debug!("Executing: {:?}", cmd);
 
@@ -366,7 +375,12 @@ chrono = {{ version = "0.4", features = ["serde"] }}
         }
 
         // 查找编译后的动态库
-        let target_dir = work_dir.join("target").join("release");
+        let target_dir = if let Some(ref custom_target) = self.config.rust_target_dir {
+            let expanded_path = shellexpand::tilde(&custom_target.to_string_lossy()).to_string();
+            PathBuf::from(expanded_path).join("release")
+        } else {
+            work_dir.join("target").join("release")
+        };
 
         // 寻找实际生成的库文件
         for entry in fs::read_dir(&target_dir)? {
