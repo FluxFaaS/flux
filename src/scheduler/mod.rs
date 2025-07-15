@@ -6,6 +6,7 @@ use crate::runtime::loader::FunctionLoader;
 use std::sync::Arc;
 
 pub mod balancer;
+pub mod lifecycle;
 pub mod pool;
 pub mod simple;
 

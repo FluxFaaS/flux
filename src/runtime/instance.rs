@@ -886,7 +886,11 @@ mod tests {
         let sandbox = Arc::new(SandboxExecutor::new(SandboxConfig::default()).unwrap());
         let resource_manager = Arc::new(ResourceManager::new());
 
-        let manager = InstanceManager::new(compiler, sandbox, resource_manager, None);
+        let config = InstanceConfig {
+            enable_auto_warm: false, // 禁用自动预热
+            ..Default::default()
+        };
+        let manager = InstanceManager::new(compiler, sandbox, resource_manager, Some(config));
 
         let function_metadata = FunctionMetadata {
             id: scru128::new(),
