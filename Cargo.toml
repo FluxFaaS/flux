@@ -36,6 +36,14 @@ path = "examples/test_isolated_executor.rs"
 name = "test-isolated-simple"
 path = "examples/test_isolated_executor_simple.rs"
 
+[[bin]]
+name = "test-instance-manager"
+path = "examples/test_instance_manager.rs"
+
+[[bin]]
+name = "test-pool-manager"
+path = "examples/test_pool_manager.rs"
+
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

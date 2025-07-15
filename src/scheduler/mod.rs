@@ -5,6 +5,7 @@ use crate::runtime::SimpleRuntime;
 use crate::runtime::loader::FunctionLoader;
 use std::sync::Arc;
 
+pub mod pool;
 pub mod simple;
 
 /// 调度器特征

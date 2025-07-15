@@ -12,6 +12,7 @@ use tokio::time::timeout;
 pub mod cache;
 pub mod compiler;
 pub mod executor;
+pub mod instance;
 pub mod loader;
 pub mod monitor;
 pub mod resource;
