@@ -51,7 +51,7 @@ pub async fn register_function(mut req: Request) -> SilentResult<Response> {
             let response = ApiResponse::<()> {
                 success: false,
                 data: None,
-                error: Some(format!("Invalid request body: {}", e)),
+                error: Some(format!("Invalid request body: {e}")),
                 message: Some("Failed to parse request body".to_string()),
             };
             return Ok(Response::json(&response).with_status(StatusCode::BAD_REQUEST));
@@ -131,7 +131,7 @@ pub async fn get_function(req: Request) -> SilentResult<Response> {
                 success: true,
                 data: Some(function),
                 error: None,
-                message: Some(format!("Function '{}' details retrieved", name)),
+                message: Some(format!("Function '{name}' details retrieved")),
             };
             Ok(Response::json(&response))
         }
@@ -139,8 +139,8 @@ pub async fn get_function(req: Request) -> SilentResult<Response> {
             let response = ApiResponse::<()> {
                 success: false,
                 data: None,
-                error: Some(format!("Function not found: {}", e)),
-                message: Some(format!("Function '{}' not found", name)),
+                error: Some(format!("Function not found: {e}")),
+                message: Some(format!("Function '{name}' not found")),
             };
             Ok(Response::json(&response).with_status(StatusCode::NOT_FOUND))
         }
@@ -173,9 +173,9 @@ pub async fn delete_function(req: Request) -> SilentResult<Response> {
 
             let response = ApiResponse {
                 success: true,
-                data: Some(format!("Function '{}' deleted successfully", name)),
+                data: Some(format!("Function '{name}' deleted successfully")),
                 error: None,
-                message: Some(format!("Function '{}' deleted successfully", name)),
+                message: Some(format!("Function '{name}' deleted successfully")),
             };
             Ok(Response::json(&response))
         }
@@ -183,8 +183,8 @@ pub async fn delete_function(req: Request) -> SilentResult<Response> {
             let response = ApiResponse::<()> {
                 success: false,
                 data: None,
-                error: Some(format!("Failed to delete function: {}", e)),
-                message: Some(format!("Function '{}' not found", name)),
+                error: Some(format!("Failed to delete function: {e}")),
+                message: Some(format!("Function '{name}' not found")),
             };
             Ok(Response::json(&response).with_status(StatusCode::NOT_FOUND))
         }
@@ -200,7 +200,7 @@ pub async fn invoke_function(mut req: Request) -> SilentResult<Response> {
             let response = ApiResponse::<()> {
                 success: false,
                 data: None,
-                error: Some(format!("Invalid request body: {}", e)),
+                error: Some(format!("Invalid request body: {e}")),
                 message: Some("Failed to parse request body".to_string()),
             };
             return Ok(Response::json(&response).with_status(StatusCode::BAD_REQUEST));
@@ -230,7 +230,7 @@ pub async fn invoke_function(mut req: Request) -> SilentResult<Response> {
                 success: true,
                 data: Some(invoke_response),
                 error: None,
-                message: Some(format!("Function '{}' executed successfully", name)),
+                message: Some(format!("Function '{name}' executed successfully")),
             };
             Ok(Response::json(&response))
         }
@@ -238,8 +238,8 @@ pub async fn invoke_function(mut req: Request) -> SilentResult<Response> {
             let response = ApiResponse::<()> {
                 success: false,
                 data: None,
-                error: Some(format!("Function execution failed: {}", e)),
-                message: Some(format!("Failed to execute function '{}'", name)),
+                error: Some(format!("Function execution failed: {e}")),
+                message: Some(format!("Failed to execute function '{name}'")),
             };
             Ok(Response::json(&response).with_status(StatusCode::INTERNAL_SERVER_ERROR))
         }
@@ -270,7 +270,7 @@ pub async fn load_function_from_file(mut req: Request) -> SilentResult<Response>
             let response = ApiResponse::<()> {
                 success: false,
                 data: None,
-                error: Some(format!("Invalid request body: {}", e)),
+                error: Some(format!("Invalid request body: {e}")),
                 message: Some("Failed to parse request body".to_string()),
             };
             return Ok(Response::json(&response).with_status(StatusCode::BAD_REQUEST));
@@ -305,8 +305,7 @@ pub async fn load_function_from_file(mut req: Request) -> SilentResult<Response>
                         data: Some(function_metadata),
                         error: None,
                         message: Some(format!(
-                            "Function '{}' loaded successfully from file",
-                            function_name
+                            "Function '{function_name}' loaded successfully from file"
                         )),
                     };
                     Ok(Response::json(&response))
@@ -315,7 +314,7 @@ pub async fn load_function_from_file(mut req: Request) -> SilentResult<Response>
                     let response = ApiResponse::<()> {
                         success: false,
                         data: None,
-                        error: Some(format!("Failed to register function: {}", e)),
+                        error: Some(format!("Failed to register function: {e}")),
                         message: Some("Function loading failed during registration".to_string()),
                     };
                     Ok(Response::json(&response).with_status(StatusCode::INTERNAL_SERVER_ERROR))
@@ -326,7 +325,7 @@ pub async fn load_function_from_file(mut req: Request) -> SilentResult<Response>
             let response = ApiResponse::<()> {
                 success: false,
                 data: None,
-                error: Some(format!("Failed to load function from file: {}", e)),
+                error: Some(format!("Failed to load function from file: {e}")),
                 message: Some("Function loading failed".to_string()),
             };
             Ok(Response::json(&response).with_status(StatusCode::INTERNAL_SERVER_ERROR))
@@ -343,7 +342,7 @@ pub async fn load_functions_from_directory(mut req: Request) -> SilentResult<Res
             let response = ApiResponse::<()> {
                 success: false,
                 data: None,
-                error: Some(format!("Invalid request body: {}", e)),
+                error: Some(format!("Invalid request body: {e}")),
                 message: Some("Failed to parse request body".to_string()),
             };
             return Ok(Response::json(&response).with_status(StatusCode::BAD_REQUEST));
@@ -375,7 +374,7 @@ pub async fn load_functions_from_directory(mut req: Request) -> SilentResult<Res
                         loaded_functions.push(function_name);
                     }
                     Err(e) => {
-                        failed_functions.push(format!("{}: {}", function_name, e));
+                        failed_functions.push(format!("{function_name}: {e}"));
                     }
                 }
             }
@@ -399,8 +398,7 @@ pub async fn load_functions_from_directory(mut req: Request) -> SilentResult<Res
                 let response = ApiResponse {
                     success: false,
                     data: Some(format!(
-                        "Loaded: {:?}, Failed: {:?}",
-                        loaded_functions, failed_functions
+                        "Loaded: {loaded_functions:?}, Failed: {failed_functions:?}"
                     )),
                     error: Some(format!(
                         "Failed to register {} functions",
@@ -415,7 +413,7 @@ pub async fn load_functions_from_directory(mut req: Request) -> SilentResult<Res
             let response = ApiResponse::<()> {
                 success: false,
                 data: None,
-                error: Some(format!("Failed to load functions from directory: {}", e)),
+                error: Some(format!("Failed to load functions from directory: {e}")),
                 message: Some("Directory loading failed".to_string()),
             };
             Ok(Response::json(&response).with_status(StatusCode::INTERNAL_SERVER_ERROR))

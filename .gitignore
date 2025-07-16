@@ -1,3 +1,5 @@
 /target
 .DS_Store
 .history
+flux_cache/
+cspell.json

@@ -8,6 +8,10 @@ readme = "./readme.md"
 repository = "https://github.com/FluxFaaS/flux"
 version = "0.1.0"
 
+[lib]
+name = "flux"
+path = "src/lib.rs"
+
 [[bin]]
 name = "flux"
 path = "src/main.rs"
@@ -15,6 +19,30 @@ path = "src/main.rs"
 [[bin]]
 name = "flux-cli"
 path = "src/bin/flux-cli.rs"
+
+[[bin]]
+name = "test-compiler"
+path = "examples/test_compiler.rs"
+
+[[bin]]
+name = "test-sandbox"
+path = "examples/test_sandbox.rs"
+
+[[bin]]
+name = "test-isolated-executor"
+path = "examples/test_isolated_executor.rs"
+
+[[bin]]
+name = "test-isolated-simple"
+path = "examples/test_isolated_executor_simple.rs"
+
+[[bin]]
+name = "test-instance-manager"
+path = "examples/test_instance_manager.rs"
+
+[[bin]]
+name = "test-pool-manager"
+path = "examples/test_pool_manager.rs"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
@@ -35,6 +63,17 @@ dashmap = "6.0"
 # 第二阶段新增 - 文件监控支持
 notify = "6.1"
 md5 = "0.7"
+# 第三阶段新增 - 真实编译和执行支持
+libloading = "0.8"
+tempfile = "3.8"
+which = "6.0"
+# 第三阶段新增 - 系统资源监控
+sysinfo = "0.30"
+# 第三阶段新增 - 沙箱和进程管理
+nix = { version = "0.29", features = ["signal", "process"] }
+libc = "0.2"
+# 路径处理工具
+shellexpand = "3.1"
 
 [dev-dependencies]
 tempfile = "3.8"

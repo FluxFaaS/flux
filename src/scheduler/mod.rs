@@ -5,6 +5,9 @@ use crate::runtime::SimpleRuntime;
 use crate::runtime::loader::FunctionLoader;
 use std::sync::Arc;
 
+pub mod balancer;
+pub mod lifecycle;
+pub mod pool;
 pub mod simple;
 
 /// 调度器特征
@@ -19,7 +22,7 @@ pub trait Scheduler {
 #[derive(Debug, Clone)]
 pub struct SimpleScheduler {
     registry: FunctionRegistry,
-    runtime: SimpleRuntime,
+    runtime: Arc<SimpleRuntime>,
     loader: Arc<FunctionLoader>,
 }
 
@@ -27,15 +30,23 @@ impl SimpleScheduler {
     pub fn new() -> Self {
         Self {
             registry: FunctionRegistry::new(),
-            runtime: SimpleRuntime::new(),
+            runtime: Arc::new(SimpleRuntime::new()),
             loader: Arc::new(FunctionLoader::new()),
         }
+    }
+
+    pub fn new_with_compilation() -> anyhow::Result<Self> {
+        Ok(Self {
+            registry: FunctionRegistry::new(),
+            runtime: Arc::new(SimpleRuntime::new_with_compilation()?),
+            loader: Arc::new(FunctionLoader::new()),
+        })
     }
 
     pub fn with_registry(registry: FunctionRegistry) -> Self {
         Self {
             registry,
-            runtime: SimpleRuntime::new(),
+            runtime: Arc::new(SimpleRuntime::new()),
             loader: Arc::new(FunctionLoader::new()),
         }
     }
@@ -43,8 +54,16 @@ impl SimpleScheduler {
     pub fn with_loader(loader: Arc<FunctionLoader>) -> Self {
         Self {
             registry: FunctionRegistry::new(),
-            runtime: SimpleRuntime::new(),
+            runtime: Arc::new(SimpleRuntime::new()),
             loader,
+        }
+    }
+
+    pub fn with_runtime(runtime: Arc<SimpleRuntime>) -> Self {
+        Self {
+            registry: FunctionRegistry::new(),
+            runtime,
+            loader: Arc::new(FunctionLoader::new()),
         }
     }
 
@@ -54,7 +73,7 @@ impl SimpleScheduler {
     }
 
     /// 获取运行时的引用
-    pub fn runtime(&self) -> &SimpleRuntime {
+    pub fn runtime(&self) -> &Arc<SimpleRuntime> {
         &self.runtime
     }
 

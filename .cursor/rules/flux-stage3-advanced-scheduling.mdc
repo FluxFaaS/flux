@@ -1,0 +1,224 @@
+---
+alwaysApply: true
+---
+description:
+globs:
+alwaysApply: false
+---
+# FluxFaaS Stage 3 - Advanced Scheduling Optimization Rules
+
+## 项目概述
+FluxFaaS 是一个轻量级私有 Serverless 平台，基于 Rust 和 Silent 框架构建。
+**第一阶段 MVP 已完成** ✅
+**第二阶段动态函数加载已完成** ✅
+**第三阶段专注于高级调度优化** 🎯
+
+## 第三阶段核心目标
+
+### 当前阶段重点
+- 实现真实的Rust代码编译和执行
+- 建立沙箱隔离执行环境
+- 优化函数实例生命周期管理
+- 实现智能负载均衡和调度算法
+- 完善资源限制和配额管理
+
+### 第三阶段开发顺序
+严格按以下顺序进行开发：
+
+1. **真实代码执行引擎** 🔥 (最高优先级)
+   - 实现真实的Rust代码编译
+   - 集成rustc编译器或使用cargo工具链
+   - 建立动态库(.so/.dll)加载机制
+   - 优化编译缓存的真实性能
+
+2. **沙箱隔离执行环境** 🔒 (高优先级)
+   - 实现进程级隔离执行器
+   - 容器化执行支持(Docker/Podman)
+   - 系统资源限制(CPU/内存/时间)
+   - 网络和文件系统访问控制
+
+3. **智能调度和生命周期管理** 🚀 (中等优先级)
+   - 函数实例池管理
+   - 冷启动优化策略
+   - 预热和缓存策略
+   - 智能负载均衡算法
+
+4. **高级错误处理和监控** 📊 (中等优先级)
+   - 函数执行重试机制
+   - 故障转移和恢复
+   - 详细的执行链路追踪
+   - 实时告警和异常处理
+
+## 架构约束（继承前两阶段）
+
+### 必须保持的约束
+- 必须使用 Silent 框架作为 web 服务基础
+- 遵循现有目录结构：`gateway/`, `scheduler/`, `runtime/`, `functions/`
+- 每个模块保持独立，通过清晰的接口通信
+- 优先使用 Rust 标准库和成熟的 crate
+- 保持第二阶段的所有功能完整性
+
+### 新增技术栈（第三阶段）
+- **代码编译**: 使用 `rustc` 或 `cargo` 工具链进行真实编译
+- **动态加载**: 使用 `libloading` 或 `dlopen` 加载编译后的动态库
+- **进程隔离**: 使用 `tokio::process` 或 `std::process` 进行进程管理
+- **容器化**: 考虑集成 `bollard` (Docker API) 或 `podman` 支持
+- **资源监控**: 使用 `sysinfo` 监控系统资源使用
+- **配额管理**: 实现基于时间窗口的资源配额系统
+
+## 代码规范（第三阶段扩展）
+
+### 新增文件组织
+```
+src/
+├── runtime/
+│   ├── compiler.rs      # 🔥 真实Rust代码编译器 ⭐ NEW
+│   ├── sandbox.rs       # 🔒 沙箱执行环境 ⭐ NEW
+│   ├── instance.rs      # 📦 函数实例管理 ⭐ NEW
+│   └── resource.rs      # 📊 资源监控和限制 ⭐ NEW
+├── scheduler/
+│   ├── pool.rs          # 🏊 函数实例池管理 ⭐ NEW
+│   ├── balancer.rs      # ⚖️ 负载均衡器 ⭐ NEW
+│   └── lifecycle.rs     # 🔄 生命周期管理 ⭐ NEW
+├── gateway/
+│   ├── middleware.rs    # 🔌 请求中间件 ⭐ NEW
+│   └── metrics.rs       # 📈 API性能指标 ⭐ NEW
+└── config/
+    ├── runtime.rs       # ⚙️ 运行时配置 ⭐ NEW
+    └── security.rs      # 🛡️ 安全配置 ⭐ NEW
+```
+
+### 新增错误类型
+```rust
+#[derive(Debug, thiserror::Error)]
+pub enum FluxError {
+    // 继承第一、二阶段错误类型...
+
+    // 第三阶段新增
+    #[error("Real compilation failed: {0}")]
+    RealCompilationError(String),
+    #[error("Sandbox execution failed: {reason}")]
+    SandboxError { reason: String },
+    #[error("Resource limit exceeded: {resource} = {current}/{limit}")]
+    ResourceLimitError { resource: String, current: u64, limit: u64 },
+    #[error("Instance management error: {0}")]
+    InstanceError(String),
+    #[error("Load balancing error: {0}")]
+    LoadBalancingError(String),
+    #[error("Security policy violation: {0}")]
+    SecurityViolationError(String),
+}
+```
+
+## 功能要求（第三阶段）
+
+### ✅ 第一、二阶段功能（已完成）
+- ✅ 基础HTTP服务和API
+- ✅ 动态函数加载和注册
+- ✅ 函数缓存和性能监控
+- ✅ 代码安全验证
+- ✅ 文件监控和热更新
+
+### 🎯 第三阶段 - 高级调度优化（当前开发中）
+- [ ] **真实代码执行引擎**
+  - [ ] 集成rustc编译工具链
+  - [ ] 动态库加载机制
+  - [ ] 编译结果缓存优化
+  - [ ] 函数符号解析和调用
+
+- [ ] **沙箱隔离执行环境**
+  - [ ] 进程级隔离执行
+  - [ ] 容器化执行支持
+  - [ ] 系统资源限制和监控
+  - [ ] 网络和文件系统访问控制
+
+- [ ] **智能调度和生命周期管理**
+  - [ ] 函数实例池管理
+  - [ ] 负载均衡算法实现
+  - [ ] 冷启动优化策略
+  - [ ] 实例预热和缓存
+
+- [ ] **高级错误处理和监控**
+  - [ ] 执行重试和故障转移
+  - [ ] 链路追踪和性能分析
+  - [ ] 实时告警和异常处理
+  - [ ] 断路器模式实现
+
+## 第三阶段性能要求
+- 真实代码编译时间 < 5s (首次) / < 200ms (增量)
+- 函数冷启动时间 < 100ms
+- 函数热启动时间 < 10ms
+- 并发执行支持 > 1000 functions/second
+- 内存使用效率 > 90%
+- CPU利用率 < 80% (正常负载)
+
+## 第三阶段开发原则
+
+### 1. 性能优先
+- 优先解决真实编译和执行的性能问题
+- 实现有效的缓存和预编译策略
+- 优化冷启动和热启动时间
+- 建立完整的性能基准测试
+
+### 2. 安全第一
+- 严格的沙箱隔离，防止恶意代码影响系统
+- 完整的资源限制和配额管理
+- 安全的进程间通信机制
+- 定期的安全审计和漏洞扫描
+
+### 3. 稳定可靠
+- 完善的错误处理和恢复机制
+- 全面的监控和告警系统
+- 优雅的服务降级和故障转移
+- 充分的单元测试和集成测试
+
+### 4. 可扩展性
+- 支持水平扩展的架构设计
+- 模块化的组件便于独立部署
+- 标准化的接口支持多种执行环境
+- 为第四阶段的分布式部署做准备
+
+## 第三阶段开发提示
+1. 优先实现真实Rust代码编译器，这是核心突破
+2. 建立有效的沙箱隔离机制确保安全性
+3. 实现函数实例生命周期管理优化性能
+4. 集成负载均衡提升系统吞吐量
+5. 完善监控和错误处理保障稳定性
+6. 保持与第二阶段功能的兼容性
+7. 关注内存管理和资源泄漏问题
+8. 建立完整的测试和基准测试体系
+
+## 第三阶段禁止事项
+- 不要破坏第一、二阶段已完成的功能
+- 不要引入过重的外部依赖(如完整的K8s)
+- 不要忽略安全性而追求性能
+- 不要实现第四阶段的分布式功能
+- 不要偏离真实编译执行这个核心目标
+- 不要在编译器实现上过度复杂化
+
+## 第三阶段技术选型建议
+- **编译**: 使用 `std::process::Command` 调用 `rustc`
+- **动态加载**: 使用 `libloading` crate
+- **进程隔离**: 使用 `tokio::process`
+- **容器化**: 集成 `bollard` (Docker API)
+- **资源监控**: 使用 `sysinfo` crate
+- **IPC通信**: 使用 `tokio::net::UnixStream`
+
+## 第三阶段成功标准
+1. ✅ 真实Rust代码能够被编译和执行
+2. ✅ 函数在隔离环境中安全执行
+3. ✅ 实现有效的实例管理和负载均衡
+4. ✅ 性能指标全部达标
+5. ✅ 具备完整的错误处理和监控能力
+
+---
+
+*第三阶段目标：构建真正实用的高性能Serverless执行引擎*
+description:
+globs:
+alwaysApply: false
+---
+description:
+globs:
+alwaysApply: false
+---

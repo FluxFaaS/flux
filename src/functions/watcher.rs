@@ -135,7 +135,7 @@ impl FunctionWatcher {
             if watch_dir.exists() {
                 watcher
                     .watch(watch_dir, mode)
-                    .with_context(|| format!("Failed to watch directory: {:?}", watch_dir))?;
+                    .with_context(|| format!("Failed to watch directory: {watch_dir:?}"))?;
                 tracing::info!("Watching directory: {:?}", watch_dir);
             } else {
                 tracing::warn!("Watch directory does not exist: {:?}", watch_dir);

@@ -25,8 +25,11 @@ pub struct InvokeResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ExecutionStatus {
     Success,
+    /// 执行完成（第三阶段新增）
+    Completed,
     Error(String),
-
+    /// 执行失败（第三阶段新增）
+    Failed,
     Timeout,
 }
 

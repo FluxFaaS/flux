@@ -80,7 +80,7 @@ impl FileSystemStorage {
     pub fn new(storage_dir: PathBuf) -> Result<Self> {
         // 确保存储目录存在
         fs::create_dir_all(&storage_dir)
-            .with_context(|| format!("Failed to create storage directory: {:?}", storage_dir))?;
+            .with_context(|| format!("Failed to create storage directory: {storage_dir:?}"))?;
 
         let storage = Self {
             storage_dir,
@@ -91,12 +91,12 @@ impl FileSystemStorage {
     }
 
     fn get_function_file_path(&self, name: &str) -> PathBuf {
-        self.storage_dir.join(format!("{}.json", name))
+        self.storage_dir.join(format!("{name}.json"))
     }
 
     fn get_backup_path(&self) -> PathBuf {
         let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
-        self.storage_dir.join(format!("backup_{}.json", timestamp))
+        self.storage_dir.join(format!("backup_{timestamp}.json"))
     }
 
     async fn load_from_disk(&self) -> Result<()> {
@@ -137,10 +137,10 @@ impl FileSystemStorage {
 
     async fn load_function_from_file(&self, path: &Path) -> Result<FunctionRecord> {
         let content = fs::read_to_string(path)
-            .with_context(|| format!("Failed to read function file: {:?}", path))?;
+            .with_context(|| format!("Failed to read function file: {path:?}"))?;
 
         let record: FunctionRecord = serde_json::from_str(&content)
-            .with_context(|| format!("Failed to parse function file: {:?}", path))?;
+            .with_context(|| format!("Failed to parse function file: {path:?}"))?;
 
         Ok(record)
     }
@@ -148,10 +148,10 @@ impl FileSystemStorage {
     async fn save_function_to_file(&self, name: &str, record: &FunctionRecord) -> Result<()> {
         let path = self.get_function_file_path(name);
         let content = serde_json::to_string_pretty(record)
-            .with_context(|| format!("Failed to serialize function: {}", name))?;
+            .with_context(|| format!("Failed to serialize function: {name}"))?;
 
         fs::write(&path, content)
-            .with_context(|| format!("Failed to write function file: {:?}", path))?;
+            .with_context(|| format!("Failed to write function file: {path:?}"))?;
 
         Ok(())
     }
@@ -215,7 +215,7 @@ impl FunctionStorage for FileSystemStorage {
         let path = self.get_function_file_path(name);
         if path.exists() {
             fs::remove_file(&path)
-                .with_context(|| format!("Failed to delete function file: {:?}", path))?;
+                .with_context(|| format!("Failed to delete function file: {path:?}"))?;
         }
 
         if existed {
@@ -273,7 +273,7 @@ impl FunctionStorage for FileSystemStorage {
             serde_json::to_string_pretty(&*functions).context("Failed to serialize backup data")?;
 
         fs::write(&backup_path, backup_data)
-            .with_context(|| format!("Failed to write backup file: {:?}", backup_path))?;
+            .with_context(|| format!("Failed to write backup file: {backup_path:?}"))?;
 
         tracing::info!("Created backup at: {:?}", backup_path);
         Ok(backup_path)
@@ -281,10 +281,10 @@ impl FunctionStorage for FileSystemStorage {
 
     async fn restore(&self, backup_path: &Path) -> Result<()> {
         let content = fs::read_to_string(backup_path)
-            .with_context(|| format!("Failed to read backup file: {:?}", backup_path))?;
+            .with_context(|| format!("Failed to read backup file: {backup_path:?}"))?;
 
         let backup_functions: HashMap<String, FunctionRecord> = serde_json::from_str(&content)
-            .with_context(|| format!("Failed to parse backup file: {:?}", backup_path))?;
+            .with_context(|| format!("Failed to parse backup file: {backup_path:?}"))?;
 
         // 恢复到内存
         {
@@ -305,6 +305,12 @@ impl FunctionStorage for FileSystemStorage {
 /// 内存存储实现（用于测试和临时存储）
 pub struct MemoryStorage {
     functions: Arc<RwLock<HashMap<String, FunctionRecord>>>,
+}
+
+impl Default for MemoryStorage {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MemoryStorage {
