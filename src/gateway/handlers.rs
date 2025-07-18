@@ -1,4 +1,4 @@
-use crate::functions::{InvokeRequest, RegisterFunctionRequest};
+use crate::functions::{FunctionMetadata, InvokeRequest, RegisterFunctionRequest};
 use crate::scheduler::{Scheduler, SimpleScheduler};
 use serde::{Deserialize, Serialize};
 use silent::{Request, Response, Result as SilentResult, StatusCode};
@@ -41,9 +41,6 @@ pub async fn health_check(_req: Request) -> SilentResult<Response> {
 
 /// 注册函数
 pub async fn register_function(mut req: Request) -> SilentResult<Response> {
-    // 从配置中获取 scheduler
-    let _scheduler: &Arc<SimpleScheduler> = req.get_config()?;
-
     // 解析请求体 - 使用 json_parse() 方法
     let register_req: RegisterFunctionRequest = match req.json_parse().await {
         Ok(req) => req,
@@ -57,16 +54,32 @@ pub async fn register_function(mut req: Request) -> SilentResult<Response> {
             return Ok(Response::json(&response).with_status(StatusCode::BAD_REQUEST));
         }
     };
+    // 从配置中获取 scheduler
+    let scheduler = req.get_config_uncheck::<Arc<SimpleScheduler>>();
 
-    // 暂时返回成功响应，因为 SimpleScheduler 还没有这些方法
-    let response = ApiResponse {
-        success: true,
-        data: Some("Function registration received".to_string()),
-        error: None,
-        message: Some(format!(
-            "Function '{}' registration request received",
-            register_req.name
-        )),
+    let response = match scheduler
+        .registry()
+        .register(FunctionMetadata::from_request(register_req.clone()))
+        .await
+    {
+        Ok(_) => ApiResponse {
+            success: true,
+            data: Some("Function registration received".to_string()),
+            error: None,
+            message: Some(format!(
+                "Function '{}' registration request received",
+                register_req.name
+            )),
+        },
+        Err(e) => {
+            let response = ApiResponse::<()> {
+                success: false,
+                data: None,
+                error: Some(format!("Register function failed: {e}")),
+                message: Some("Failed to register function".to_string()),
+            };
+            return Ok(Response::json(&response).with_status(StatusCode::BAD_REQUEST));
+        }
     };
     Ok(Response::json(&response))
 }
