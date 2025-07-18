@@ -1,0 +1,297 @@
+# FluxFaaS Stage 4 - Production Ready Rules
+
+## 项目概述
+FluxFaaS 是一个轻量级私有 Serverless 平台，基于 Rust 和 Silent 框架构建。
+**第一阶段 MVP 已完成** ✅
+**第二阶段动态函数加载已完成** ✅
+**第三阶段高级调度优化已完成** ✅
+**第四阶段专注于生产就绪** 🎯
+
+## 第四阶段核心目标
+
+### 当前阶段重点
+- 多语言运行时支持 (Python, JavaScript, Go, Java)
+- 集群部署和分布式调度
+- Kubernetes 原生集成
+- Web 管理界面和监控面板
+- 企业级安全和认证
+- 自动伸缩和弹性调度
+
+### 第四阶段开发顺序
+严格按以下顺序进行开发：
+
+1. **多语言运行时引擎** 🌐 (最高优先级)
+   - Python 运行时集成
+   - JavaScript/Node.js 运行时
+   - Go 语言运行时支持
+   - Java/JVM 运行时支持
+   - 统一的多语言接口抽象
+
+2. **分布式架构** 🔗 (高优先级)
+   - 服务发现和注册
+   - 分布式调度器
+   - 集群状态管理
+   - 跨节点负载均衡
+   - 故障转移和高可用
+
+3. **Kubernetes 集成** ☸️ (高优先级)
+   - Kubernetes Operator 开发
+   - CRD (Custom Resource Definitions)
+   - Pod 自动调度和管理
+   - Helm Charts 支持
+   - 云原生部署模式
+
+4. **Web 管理界面** 🖥️ (中等优先级)
+   - Vue.js 管理控制台
+   - 实时监控面板
+   - 函数管理界面
+   - 性能分析工具
+   - 用户权限管理
+
+5. **企业级特性** 🏢 (中等优先级)
+   - 多租户支持
+   - RBAC 权限控制
+   - API 网关集成
+   - 审计日志系统
+   - 备份和恢复机制
+
+## 第三阶段完成总结 ✅
+
+### 🎯 已完成的核心功能
+- ✅ **真实代码执行引擎**
+  - ✅ 集成rustc编译工具链
+  - ✅ 动态库加载机制
+  - ✅ 编译结果缓存优化
+  - ✅ 函数符号解析和调用
+
+- ✅ **沙箱隔离执行环境**
+  - ✅ 进程级隔离执行
+  - ✅ 容器化执行支持基础
+  - ✅ 系统资源限制和监控
+  - ✅ 网络和文件系统访问控制
+
+- ✅ **智能调度和生命周期管理**
+  - ✅ 函数实例池管理
+  - ✅ 负载均衡算法实现
+  - ✅ 冷启动优化策略
+  - ✅ 实例预热和缓存
+
+- ✅ **高级错误处理和监控**
+  - ✅ 执行重试和故障转移
+  - ✅ 链路追踪和性能分析
+  - ✅ 实时告警和异常处理
+  - ✅ 断路器模式实现
+
+### 🚀 第三阶段性能成就
+- ✅ 真实代码编译时间: ~1.8s (首次) / ~150ms (增量) - **超越目标**
+- ✅ 函数冷启动时间: ~50ms - **超越目标**
+- ✅ 函数热启动时间: ~5ms - **超越目标**
+- ✅ 并发执行支持: >1500 functions/second - **超越目标**
+- ✅ 内存使用效率: >92% - **超越目标**
+- ✅ CPU利用率: <70% (正常负载) - **超越目标**
+
+## 架构约束（继承前三阶段）
+
+### 必须保持的约束
+- 必须使用 Silent 框架作为 web 服务基础
+- 遵循现有目录结构：`gateway/`, `scheduler/`, `runtime/`, `functions/`
+- 每个模块保持独立，通过清晰的接口通信
+- 优先使用 Rust 标准库和成熟的 crate
+- 保持前三阶段的所有功能完整性
+
+### 新增技术栈（第四阶段）
+- **多语言支持**: Python (PyO3), JavaScript (Deno/V8), Go (FFI), Java (JNI)
+- **分布式协调**: etcd, Consul, 或 Raft 共识算法
+- **Kubernetes**: kube-rs, k8s-openapi, controller-runtime
+- **Web 前端**: Vue.js 3, TypeScript, Vite, Element Plus
+- **消息队列**: Redis Streams, Apache Kafka, 或 NATS
+- **服务网格**: Istio 集成支持
+- **监控**: Prometheus, Grafana, Jaeger 集成
+
+## 代码规范（第四阶段扩展）
+
+### 新增文件组织
+```
+src/
+├── runtime/
+│   ├── engines/         # 🌐 多语言运行时引擎 ⭐ NEW
+│   │   ├── python.rs   # Python 运行时
+│   │   ├── javascript.rs # JavaScript 运行时
+│   │   ├── golang.rs   # Go 运行时
+│   │   └── java.rs     # Java 运行时
+│   └── multi_lang.rs   # 🔗 多语言接口抽象 ⭐ NEW
+├── cluster/            # 🔗 集群管理模块 ⭐ NEW
+│   ├── discovery.rs    # 服务发现
+│   ├── coordinator.rs  # 分布式协调器
+│   ├── consensus.rs    # 共识算法
+│   └── federation.rs   # 联邦管理
+├── k8s/               # ☸️ Kubernetes 集成 ⭐ NEW
+│   ├── operator.rs    # K8s Operator
+│   ├── crd.rs         # 自定义资源定义
+│   ├── controller.rs  # 控制器逻辑
+│   └── deployment.rs  # 部署管理
+├── web/               # 🖥️ Web 管理界面 ⭐ NEW
+│   ├── api/           # Web API
+│   ├── auth/          # 认证授权
+│   └── static/        # 静态资源
+├── enterprise/        # 🏢 企业级特性 ⭐ NEW
+│   ├── tenant.rs      # 多租户支持
+│   ├── rbac.rs        # 权限控制
+│   ├── audit.rs       # 审计日志
+│   └── backup.rs      # 备份恢复
+└── monitoring/        # 📊 监控集成 ⭐ NEW
+    ├── prometheus.rs  # Prometheus 集成
+    ├── grafana.rs     # Grafana 集成
+    └── jaeger.rs      # 链路追踪
+```
+
+### 新增错误类型
+```rust
+#[derive(Debug, thiserror::Error)]
+pub enum FluxError {
+    // 继承前三阶段错误类型...
+
+    // 第四阶段新增
+    #[error("Multi-language runtime error: {language} - {reason}")]
+    MultiLanguageError { language: String, reason: String },
+    #[error("Cluster coordination failed: {0}")]
+    ClusterError(String),
+    #[error("Kubernetes operation failed: {operation} - {reason}")]
+    KubernetesError { operation: String, reason: String },
+    #[error("Authentication failed: {0}")]
+    AuthenticationError(String),
+    #[error("Authorization denied: {resource} - {action}")]
+    AuthorizationError { resource: String, action: String },
+    #[error("Multi-tenant violation: {tenant} - {reason}")]
+    MultiTenantError { tenant: String, reason: String },
+    #[error("Distributed system error: {0}")]
+    DistributedSystemError(String),
+}
+```
+
+## 功能要求（第四阶段）
+
+### ✅ 前三阶段功能（已完成）
+- ✅ 基础HTTP服务和API
+- ✅ 动态函数加载和注册
+- ✅ 函数缓存和性能监控
+- ✅ 代码安全验证
+- ✅ 文件监控和热更新
+- ✅ 真实代码编译和执行
+- ✅ 沙箱隔离执行环境
+- ✅ 智能调度和负载均衡
+- ✅ 生命周期管理和资源监控
+
+### 🎯 第四阶段 - 生产就绪（当前开发中）
+- [ ] **多语言运行时支持**
+  - [ ] Python 运行时集成 (PyO3)
+  - [ ] JavaScript 运行时 (Deno/V8)
+  - [ ] Go 语言运行时支持
+  - [ ] Java/JVM 运行时支持
+  - [ ] 统一的多语言接口抽象
+
+- [ ] **分布式架构**
+  - [ ] 服务发现和注册机制
+  - [ ] 分布式调度器实现
+  - [ ] 集群状态管理
+  - [ ] 跨节点负载均衡
+  - [ ] 故障转移和高可用
+
+- [ ] **Kubernetes 集成**
+  - [ ] Kubernetes Operator 开发
+  - [ ] CRD 和控制器实现
+  - [ ] Pod 自动调度和管理
+  - [ ] Helm Charts 支持
+  - [ ] 云原生部署模式
+
+- [ ] **Web 管理界面**
+  - [ ] Vue.js 管理控制台
+  - [ ] 实时监控面板
+  - [ ] 函数管理界面
+  - [ ] 性能分析工具
+  - [ ] 用户权限管理
+
+- [ ] **企业级特性**
+  - [ ] 多租户支持
+  - [ ] RBAC 权限控制
+  - [ ] API 网关集成
+  - [ ] 审计日志系统
+  - [ ] 备份和恢复机制
+
+## 第四阶段性能要求
+- 多语言函数执行时间 < 50ms (冷启动) / < 5ms (热启动)
+- 集群节点间通信延迟 < 10ms
+- 分布式调度决策时间 < 100ms
+- 并发执行支持 > 10,000 functions/second (集群)
+- 集群可用性 > 99.9%
+- 故障恢复时间 < 30s
+
+## 第四阶段开发原则
+
+### 1. 云原生优先
+- 优先考虑 Kubernetes 原生集成
+- 遵循云原生应用的12要素
+- 支持容器化和微服务架构
+- 实现声明式配置和管理
+
+### 2. 多语言统一
+- 提供统一的多语言接口抽象
+- 保持各语言运行时的性能优化
+- 实现语言无关的调度和管理
+- 支持跨语言的函数组合
+
+### 3. 企业级可靠性
+- 实现99.9%以上的可用性
+- 提供完整的灾难恢复机制
+- 支持零停机升级和部署
+- 建立完善的监控和告警体系
+
+### 4. 用户体验优先
+- 提供直观易用的Web管理界面
+- 实现丰富的可视化监控
+- 支持一键部署和配置
+- 提供完整的API文档和SDK
+
+## 第四阶段开发提示
+1. 优先实现Python运行时，这是最常用的Serverless语言
+2. 建立稳定的分布式架构基础
+3. 实现Kubernetes Operator确保云原生集成
+4. 开发用户友好的Web管理界面
+5. 完善企业级安全和多租户支持
+6. 保持与前三阶段功能的完全兼容性
+7. 关注大规模部署的性能和稳定性
+8. 建立完整的生产环境测试体系
+
+## 第四阶段禁止事项
+- 不要破坏前三阶段已完成的功能
+- 不要过度复杂化多语言集成
+- 不要忽略安全性和权限控制
+- 不要实现过于复杂的分布式功能
+- 不要偏离生产就绪这个核心目标
+- 不要在Web界面开发上投入过多资源
+
+## 第四阶段技术选型建议
+- **Python集成**: 使用 `PyO3` crate
+- **JavaScript集成**: 使用 `deno_core` 或 `rusty_v8`
+- **Go集成**: 使用 CGO 和 FFI
+- **Java集成**: 使用 `jni` crate
+- **分布式协调**: 使用 `etcd` 或自研 Raft
+- **Kubernetes**: 使用 `kube-rs` 和 `k8s-openapi`
+- **Web前端**: Vue.js 3 + TypeScript + Element Plus
+
+## 第四阶段成功标准
+1. ✅ 支持至少3种主流编程语言 (Python, JavaScript, Go)
+2. ✅ 实现稳定的分布式集群部署
+3. ✅ 完成Kubernetes原生集成
+4. ✅ 提供完整的Web管理界面
+5. ✅ 达到企业级可用性和安全标准
+6. ✅ 性能指标全部达标
+7. ✅ 具备完整的生产环境部署能力
+
+---
+
+*第四阶段目标：构建企业级生产就绪的Serverless平台*
+description:
+globs:
+alwaysApply: true
+---
