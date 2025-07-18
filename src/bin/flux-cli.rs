@@ -83,7 +83,7 @@ async fn list_functions(client: &reqwest::Client, base_url: &str) -> anyhow::Res
 
     let data: Value = response.json().await?;
 
-    if let Some(functions) = data["functions"].as_array() {
+    if let Some(functions) = data["data"].as_array() {
         if functions.is_empty() {
             println!("📭 没有注册的函数");
             return Ok(());
@@ -120,7 +120,7 @@ async fn invoke_function(client: &reqwest::Client, base_url: &str) -> anyhow::Re
 
     let data: Value = response.json().await?;
     let empty_vec = vec![];
-    let functions = data["functions"].as_array().unwrap_or(&empty_vec);
+    let functions = data["data"].as_array().unwrap_or(&empty_vec);
 
     if functions.is_empty() {
         println!("❌ 没有可用的函数");
@@ -295,7 +295,7 @@ async fn load_function_from_file(client: &reqwest::Client, base_url: &str) -> an
     println!("📤 正在从文件加载函数...");
 
     let response = client
-        .post(format!("{base_url}/functions/load-file"))
+        .post(format!("{base_url}/load/file"))
         .json(&load_request)
         .send()
         .await?;
@@ -337,7 +337,7 @@ async fn load_functions_from_directory(
     });
 
     let response = client
-        .post(format!("{base_url}/functions/load-directory"))
+        .post(format!("{base_url}/load/directory"))
         .json(&load_request)
         .send()
         .await?;
@@ -345,14 +345,14 @@ async fn load_functions_from_directory(
     if response.status().is_success() {
         let result: Value = response.json().await?;
         if let Some(data) = result.get("data") {
-            if let Some(count) = data["functions_loaded"].as_u64() {
-                if count > 0 {
-                    println!("✅ 成功从目录 '{dir_path}' 加载了 {count} 个函数!");
-                    println!("💡 所有函数都已通过安全验证并注册到系统中");
-                } else {
-                    println!("⚠️  目录 '{dir_path}' 中没有找到有效的函数文件");
-                    println!("💡 请确保目录中包含 .rs 文件且格式正确");
-                }
+            if let Some(data_str) = data.as_str() {
+                println!("✅ {data_str}");
+                println!("💡 所有函数都已通过安全验证并注册到系统中");
+            }
+        }
+        if let Some(message) = result.get("message") {
+            if let Some(msg) = message.as_str() {
+                println!("📝 {msg}");
             }
         }
     } else {
@@ -451,7 +451,7 @@ async fn show_cache_statistics(client: &reqwest::Client, base_url: &str) -> anyh
 /// 显示性能监控信息
 async fn show_performance_monitor(client: &reqwest::Client, base_url: &str) -> anyhow::Result<()> {
     let response = client
-        .get(format!("{base_url}/monitor/performance"))
+        .get(format!("{base_url}/performance/stats"))
         .send()
         .await?;
 
@@ -521,10 +521,7 @@ async fn reset_performance_data(client: &reqwest::Client, base_url: &str) -> any
     let confirmation = input.trim().to_lowercase();
 
     if confirmation == "y" || confirmation == "yes" {
-        let response = client
-            .post(format!("{base_url}/monitor/reset"))
-            .send()
-            .await?;
+        let response = client.post(format!("{base_url}/reset")).send().await?;
 
         if response.status().is_success() {
             println!("✅ 性能监控数据已重置");
