@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tempfile::TempDir;
 use tokio::time::{Duration, sleep};
 
-use flux::functions::{FunctionMetadata, InvokeRequest};
+use flux::functions::{FunctionMetadata, InvokeRequest, ReturnType, ScriptType};
 use flux::runtime::compiler::{CompilerConfig, RustCompiler};
 use flux::runtime::instance::{InstanceConfig, InstanceManager};
 use flux::runtime::resource::ResourceManager;
@@ -95,7 +95,8 @@ fn hello_pool(input: serde_json::Value) -> serde_json::Value {
         version: "1.0.0".to_string(),
         dependencies: vec![],
         parameters: vec![],
-        return_type: "serde_json::Value".to_string(),
+        return_type: ReturnType::Any,
+        script_type: ScriptType::Rust,
     };
 
     let pool = pool_manager
@@ -233,7 +234,8 @@ fn calculator_pool(input: serde_json::Value) -> serde_json::Value {
         version: "1.0.0".to_string(),
         dependencies: vec![],
         parameters: vec![],
-        return_type: "serde_json::Value".to_string(),
+        return_type: ReturnType::Any,
+        script_type: ScriptType::Rust,
     };
 
     let calculator_pool_config = PoolConfig {

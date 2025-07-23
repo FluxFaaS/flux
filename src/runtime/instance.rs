@@ -870,6 +870,7 @@ pub struct InstanceManagerStats {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::functions::ScriptType;
     use crate::runtime::compiler::CompilerConfig;
     use crate::runtime::sandbox::SandboxConfig;
     use tempfile::TempDir;
@@ -903,7 +904,8 @@ mod tests {
             version: "1.0.0".to_string(),
             dependencies: vec![],
             parameters: vec![],
-            return_type: "i32".to_string(),
+            return_type: crate::functions::ReturnType::Integer,
+            script_type: ScriptType::Rust,
         };
 
         let instance_id = manager

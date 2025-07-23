@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use crate::functions::{
-    ExecutionStatus, FluxError, FunctionMetadata, InvokeRequest, InvokeResponse, Result,
+    ExecutionStatus, FluxError, FunctionMetadata, InvokeRequest, InvokeResponse, Result, ScriptType,
 };
 use crate::runtime::cache::FunctionCache;
 use crate::runtime::compiler::{CompilerConfig, RustCompiler};
@@ -19,15 +19,6 @@ pub mod resource;
 pub mod sandbox;
 pub mod validator;
 
-/// 代码类型枚举
-#[derive(Debug, Clone, PartialEq)]
-enum CodeType {
-    JavaScript,
-    Python,
-    Rust,
-    SimpleExpression,
-    Unknown,
-}
 
 /// 简单的函数执行器
 #[derive(Debug)]
@@ -297,19 +288,23 @@ impl SimpleRuntime {
         function: &FunctionMetadata,
         request: &InvokeRequest,
     ) -> Result<serde_json::Value> {
-        let code_type = self.detect_code_type(&function.code);
+        let script_type = self.get_script_type(function);
 
-        match code_type {
-            CodeType::JavaScript => self.execute_with_node_js(function, request).await,
-            CodeType::Python => self.execute_with_python(function, request).await,
-            CodeType::Rust => {
+        match script_type {
+            ScriptType::JavaScript => self.execute_with_node_js(function, request).await,
+            ScriptType::Python => self.execute_with_python(function, request).await,
+            ScriptType::TypeScript => {
+                // TypeScript 需要编译为 JavaScript 后执行
+                // 暂时当作 JavaScript 处理
+                self.execute_with_node_js(function, request).await
+            }
+            ScriptType::Rust => {
                 // 如果有编译器但未启用，尝试启用
                 if self.compiler.is_some() {
                     return self.execute_with_compilation(function, request).await;
                 }
                 Err(FluxError::Runtime("Rust execution requires compilation".to_string()))
-            },
-            _ => Err(FluxError::Runtime("Unsupported code type for external execution".to_string()))
+            }
         }
     }
 
@@ -337,11 +332,11 @@ impl SimpleRuntime {
 
         // 创建临时文件
         let temp_dir = tempfile::TempDir::new()
-            .map_err(|e| FluxError::Runtime(format!("Failed to create temp directory: {}", e)))?;
+            .map_err(|e| FluxError::Runtime(format!("Failed to create temp directory: {e}")))?;
         let script_path = temp_dir.path().join("function.js");
 
         tokio::fs::write(&script_path, js_code).await
-            .map_err(|e| FluxError::Runtime(format!("Failed to write script file: {}", e)))?;
+            .map_err(|e| FluxError::Runtime(format!("Failed to write script file: {e}")))?;
 
         // 执行Node.js
         let output = Command::new("node")
@@ -350,11 +345,11 @@ impl SimpleRuntime {
             .stderr(Stdio::piped())
             .output()
             .await
-            .map_err(|e| FluxError::Runtime(format!("Failed to execute Node.js: {}", e)))?;
+            .map_err(|e| FluxError::Runtime(format!("Failed to execute Node.js: {e}")))?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(FluxError::Runtime(format!("JavaScript execution failed: {}", stderr)));
+            return Err(FluxError::Runtime(format!("JavaScript execution failed: {stderr}")));
         }
 
         let stdout = String::from_utf8_lossy(&output.stdout);
@@ -396,11 +391,11 @@ impl SimpleRuntime {
 
         // 创建临时文件
         let temp_dir = tempfile::TempDir::new()
-            .map_err(|e| FluxError::Runtime(format!("Failed to create temp directory: {}", e)))?;
+            .map_err(|e| FluxError::Runtime(format!("Failed to create temp directory: {e}")))?;
         let script_path = temp_dir.path().join("function.py");
 
         tokio::fs::write(&script_path, python_code).await
-            .map_err(|e| FluxError::Runtime(format!("Failed to write script file: {}", e)))?;
+            .map_err(|e| FluxError::Runtime(format!("Failed to write script file: {e}")))?;
 
         // 尝试python3，如果失败则尝试python
         let mut cmd = Command::new("python3");
@@ -410,22 +405,23 @@ impl SimpleRuntime {
 
         let output = cmd.output().await;
 
-        let output = if output.is_err() {
-            // 尝试python命令
-            Command::new("python")
-                .arg(&script_path)
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .output()
-                .await
-                .map_err(|e| FluxError::Runtime(format!("Failed to execute Python: {}", e)))?
-        } else {
-            output.unwrap()
+        let output = match output {
+            Ok(output) => output,
+            Err(_) => {
+                // 尝试python命令
+                Command::new("python")
+                    .arg(&script_path)
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .output()
+                    .await
+                    .map_err(|e| FluxError::Runtime(format!("Failed to execute Python: {e}")))?
+            }
         };
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(FluxError::Runtime(format!("Python execution failed: {}", stderr)));
+            return Err(FluxError::Runtime(format!("Python execution failed: {stderr}")));
         }
 
         let stdout = String::from_utf8_lossy(&output.stdout);
@@ -438,11 +434,11 @@ impl SimpleRuntime {
     /// 包装JavaScript代码为可执行脚本
     fn wrap_javascript_code(&self, code: &str, request: &InvokeRequest) -> Result<String> {
         let input_json = serde_json::to_string(&request.input)
-            .map_err(|e| FluxError::Runtime(format!("Failed to serialize input: {}", e)))?;
+            .map_err(|e| FluxError::Runtime(format!("Failed to serialize input: {e}")))?;
 
         let wrapped_code = format!(r#"
 // FluxFaaS JavaScript Function Executor
-const input = {};
+const input = {input_json};
 
 // Suppress console.log to avoid mixing with result output
 const originalConsoleLog = console.log;
@@ -455,7 +451,7 @@ try {{
     // Method 1: Try to execute code and capture the last expression
     const userFunction = new Function('input', `
         "use strict";
-        {}
+        {code}
     `);
 
     result = userFunction(input);
@@ -467,7 +463,7 @@ try {{
             const returnFunction = new Function('input', `
                 "use strict";
                 return (function() {{
-                    {}
+                    {code}
                 }})();
             `);
             result = returnFunction(input);
@@ -476,7 +472,7 @@ try {{
             try {{
                 const exprFunction = new Function('input', `
                     "use strict";
-                    return ({});
+                    return ({code});
                 `);
                 result = exprFunction(input);
             }} catch (e2) {{
@@ -487,7 +483,7 @@ try {{
                     const input = sandbox.input;
                     let result, output, value, data;
 
-                    {}
+                    {code}
 
                     // Return the first defined result variable
                     if (typeof result !== 'undefined') return result;
@@ -515,7 +511,7 @@ if (executionError) {{
 }} else {{
     console.log(JSON.stringify({{ result: result }}));
 }}
-"#, input_json, code, code, code, code);
+"#);
 
         Ok(wrapped_code)
     }
@@ -523,7 +519,7 @@ if (executionError) {{
     /// 包装Python代码为可执行脚本
     fn wrap_python_code(&self, code: &str, request: &InvokeRequest) -> Result<String> {
         let input_json = serde_json::to_string(&request.input)
-            .map_err(|e| FluxError::Runtime(format!("Failed to serialize input: {}", e)))?;
+            .map_err(|e| FluxError::Runtime(format!("Failed to serialize input: {e}")))?;
 
         let wrapped_code = format!(r#"
 #!/usr/bin/env python3
@@ -534,7 +530,7 @@ import io
 from contextlib import redirect_stdout
 
 # Input data
-input_data = {}
+input_data = {input_json}
 
 # Make input available as global variable
 input = input_data
@@ -551,7 +547,7 @@ try:
     # Capture stdout to separate print output from result
     with redirect_stdout(captured_output):
         # Execute user code
-        exec('''{}''', {{}}, local_namespace)
+        exec('''{code}''', {{}}, local_namespace)
 
     # Try to get result in order of preference
     if 'result' in local_namespace:
@@ -597,7 +593,7 @@ else:
         "result": result,
         "console_output": console_output
     }}))
-"#, input_json, code);
+"#);
 
         Ok(wrapped_code)
     }
@@ -608,58 +604,24 @@ else:
         function: &FunctionMetadata,
         request: &InvokeRequest,
     ) -> Result<serde_json::Value> {
-        // 检测代码语言类型
-        let code_type = self.detect_code_type(&function.code);
+        // 使用函数元数据中的脚本类型
+        let script_type = self.get_script_type(function);
 
-        match code_type {
-            CodeType::JavaScript => self.execute_javascript_code(function, request).await,
-            CodeType::Python => self.execute_python_code(function, request).await,
-            CodeType::Rust => self.execute_rust_like_code(function, request).await,
-            CodeType::SimpleExpression => self.execute_simple_expression(function, request).await,
-            CodeType::Unknown => {
-                tracing::warn!("Unknown code type for function: {}, falling back to expression evaluation", function.name);
-                self.execute_simple_expression(function, request).await
+        match script_type {
+            ScriptType::JavaScript => self.execute_javascript_code(function, request).await,
+            ScriptType::Python => self.execute_python_code(function, request).await,
+            ScriptType::TypeScript => {
+                // TypeScript 代码模拟执行（简化处理）
+                self.execute_javascript_code(function, request).await
             }
+            ScriptType::Rust => self.execute_rust_like_code(function, request).await,
         }
     }
 
     /// 检测代码类型
-    fn detect_code_type(&self, code: &str) -> CodeType {
-        let code_lower = code.to_lowercase();
-
-        // JavaScript 特征
-        if code_lower.contains("function") ||
-           code_lower.contains("const ") ||
-           code_lower.contains("let ") ||
-           code_lower.contains("var ") ||
-           code_lower.contains("json.parse") ||
-           code_lower.contains("=>") {
-            return CodeType::JavaScript;
-        }
-
-        // Python 特征
-        if code_lower.contains("def ") ||
-           code_lower.contains("import ") ||
-           code_lower.contains("print(") ||
-           code.contains("    ") && code_lower.contains(":") { // 缩进 + 冒号
-            return CodeType::Python;
-        }
-
-        // Rust 特征
-        if code_lower.contains("fn ") ||
-           code_lower.contains("let mut") ||
-           code_lower.contains("match ") ||
-           code_lower.contains("impl ") {
-            return CodeType::Rust;
-        }
-
-        // 简单表达式
-        if code.trim().starts_with("return ") ||
-           (!code.contains('\n') && (code.contains('+') || code.contains('-') || code.contains('*') || code.contains('/'))) {
-            return CodeType::SimpleExpression;
-        }
-
-        CodeType::Unknown
+    /// 基于函数元数据获取脚本类型
+    fn get_script_type(&self, function: &FunctionMetadata) -> ScriptType {
+        function.script_type.clone()
     }
 
     /// 执行JavaScript代码
@@ -728,23 +690,6 @@ else:
         }))
     }
 
-    /// 执行简单表达式
-    async fn execute_simple_expression(
-        &self,
-        function: &FunctionMetadata,
-        request: &InvokeRequest,
-    ) -> Result<serde_json::Value> {
-        tracing::debug!("Executing simple expression for function: {}", function.name);
-
-        let result = self.evaluate_expression(&function.code, request)?;
-
-        Ok(serde_json::json!({
-            "result": result,
-            "language": "expression",
-            "function_name": function.name,
-            "execution_time": chrono::Utc::now().to_rfc3339()
-        }))
-    }
 
     /// 创建JavaScript执行上下文
     fn create_js_context(&self, request: &InvokeRequest) -> Result<serde_json::Value> {
@@ -1323,8 +1268,7 @@ else:
         }
 
         Err(FluxError::Runtime(format!(
-            "Cannot parse '{}' as number",
-            value
+            "Cannot parse '{value}' as number"
         )))
     }
 

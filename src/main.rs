@@ -66,7 +66,7 @@ async fn main() -> anyhow::Result<()> {
 
 /// 预注册示例函数
 async fn register_sample_functions(scheduler: &SimpleScheduler) -> anyhow::Result<()> {
-    use functions::{FunctionMetadata, RegisterFunctionRequest};
+    use functions::{FunctionMetadata, RegisterFunctionRequest, ScriptType};
 
     let registry = scheduler.registry();
 
@@ -80,6 +80,7 @@ async fn register_sample_functions(scheduler: &SimpleScheduler) -> anyhow::Resul
             dependencies: None,
             parameters: None,
             return_type: None,
+            script_type: ScriptType::JavaScript,
         },
         RegisterFunctionRequest {
             name: "echo".to_string(),
@@ -90,6 +91,7 @@ async fn register_sample_functions(scheduler: &SimpleScheduler) -> anyhow::Resul
             dependencies: None,
             parameters: None,
             return_type: None,
+            script_type: ScriptType::JavaScript,
         },
         RegisterFunctionRequest {
             name: "add".to_string(),
@@ -100,6 +102,7 @@ async fn register_sample_functions(scheduler: &SimpleScheduler) -> anyhow::Resul
             dependencies: None,
             parameters: None,
             return_type: None,
+            script_type: ScriptType::JavaScript,
         },
     ];
 

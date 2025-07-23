@@ -1065,6 +1065,7 @@ impl LifecycleManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::functions::ScriptType;
     use crate::runtime::compiler::RustCompiler;
     use crate::runtime::resource::ResourceManager;
     use crate::runtime::sandbox::SandboxExecutor;
@@ -1128,7 +1129,8 @@ mod tests {
             timeout_ms: 5000,
             dependencies: vec![],
             parameters: vec![],
-            return_type: "()".to_string(),
+            return_type: crate::functions::ReturnType::Void,
+            script_type: ScriptType::Rust,
         };
 
         // 创建实例

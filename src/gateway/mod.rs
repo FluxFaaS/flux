@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use crate::functions::{FunctionMetadata, RegisterFunctionRequest};
+use crate::functions::{FunctionMetadata, RegisterFunctionRequest, ScriptType};
 use crate::scheduler::SimpleScheduler;
 use silent::prelude::*;
 use std::sync::Arc;
@@ -51,6 +51,7 @@ impl FluxGateway {
             dependencies: None,
             parameters: None,
             return_type: None,
+            script_type: ScriptType::JavaScript, // 简单表达式，当作 JavaScript 处理
         });
         registry
             .register(hello_fn)
@@ -67,6 +68,7 @@ impl FluxGateway {
             dependencies: None,
             parameters: None,
             return_type: None,
+            script_type: ScriptType::JavaScript, // 简单表达式，当作 JavaScript 处理
         });
         registry
             .register(echo_fn)
@@ -83,6 +85,7 @@ impl FluxGateway {
             dependencies: None,
             parameters: None,
             return_type: None,
+            script_type: ScriptType::JavaScript, // 简单表达式，当作 JavaScript 处理
         });
         registry
             .register(add_fn)

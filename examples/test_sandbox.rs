@@ -1,5 +1,5 @@
 use anyhow::Result;
-use flux::functions::{FunctionMetadata, InvokeRequest};
+use flux::functions::{FunctionMetadata, InvokeRequest, ScriptType};
 use flux::runtime::compiler::{CompilerConfig, RustCompiler};
 use flux::runtime::sandbox::{SandboxConfig, SandboxExecutor};
 use serde_json::json;
@@ -27,6 +27,7 @@ pub fn main() {
 }
 "#
         .to_string(),
+        Some(ScriptType::Rust), // 明确指定为 Rust 代码
     );
 
     // 创建沙箱配置
@@ -167,6 +168,7 @@ fn fibonacci(n: u32) -> u64 {
 }
 "#
         .to_string(),
+        Some(ScriptType::Rust), // 明确指定为 Rust 代码
     );
 
     let sandbox_config = SandboxConfig::default();

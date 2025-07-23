@@ -23,6 +23,7 @@ console.log("正在计算:", a, "+", b);
 return a + b;
 "#
         .to_string(),
+        None, // 使用自动检测
     );
 
     let js_request = InvokeRequest {
@@ -42,7 +43,7 @@ return a + b;
             println!("   耗时: {}ms", response.execution_time_ms);
         }
         Err(e) => {
-            println!("❌ JavaScript执行失败: {}", e);
+            println!("❌ JavaScript执行失败: {e}");
         }
     }
 
@@ -60,6 +61,7 @@ b = input.get('b', 0)
 result = multiply(a, b)
 "#
         .to_string(),
+        None, // 使用自动检测
     );
 
     let py_request = InvokeRequest {
@@ -79,14 +81,16 @@ result = multiply(a, b)
             println!("   耗时: {}ms", response.execution_time_ms);
         }
         Err(e) => {
-            println!("❌ Python执行失败: {}", e);
+            println!("❌ Python执行失败: {e}");
         }
     }
 
     // 测试简单表达式
     println!("\n🧮 测试简单表达式:");
     let expr_function =
-        FunctionMetadata::new("simple_calc".to_string(), "return a * 2 + b".to_string());
+        FunctionMetadata::new("simple_calc".to_string(), "return a * 2 + b".to_string(), None);
+
+    println!("   表达式: {expr_function:?}", );
 
     let expr_request = InvokeRequest {
         input: json!({
@@ -105,7 +109,7 @@ result = multiply(a, b)
             println!("   耗时: {}ms", response.execution_time_ms);
         }
         Err(e) => {
-            println!("❌ 表达式执行失败: {}", e);
+            println!("❌ 表达式执行失败: {e}");
         }
     }
 
@@ -126,6 +130,7 @@ console.log(`计算完成!`);
 return result;
 "#
         .to_string(),
+        None, // 使用自动检测
     );
 
     let complex_request = InvokeRequest {
@@ -144,7 +149,7 @@ return result;
             println!("   耗时: {}ms", response.execution_time_ms);
         }
         Err(e) => {
-            println!("❌ 复杂JavaScript执行失败: {}", e);
+            println!("❌ 复杂JavaScript执行失败: {e}");
         }
     }
 

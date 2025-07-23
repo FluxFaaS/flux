@@ -1,5 +1,5 @@
 use anyhow::Result;
-use flux::functions::{FunctionMetadata, InvokeRequest};
+use flux::functions::{FunctionMetadata, InvokeRequest, ScriptType};
 use flux::runtime::compiler::CompilerConfig;
 use flux::runtime::executor::{IsolatedExecutorConfig, IsolatedProcessExecutor};
 use flux::runtime::resource::ResourceQuota;
@@ -57,6 +57,7 @@ pub fn main() {
 }
 "#
         .to_string(),
+        Some(ScriptType::Rust), // 明确指定为 Rust 代码
     );
 
     // 创建进程级隔离执行器配置
@@ -295,6 +296,7 @@ pub fn main() {
 }
 "#
         .to_string(),
+        Some(ScriptType::Rust), // 明确指定为 Rust 代码
     );
 
     let resource_test_request = InvokeRequest {
@@ -359,6 +361,7 @@ pub fn main() {
 }
 "#
         .to_string(),
+        Some(ScriptType::Rust), // 明确指定为 Rust 代码
     );
 
     let request = InvokeRequest { input: json!({}) };

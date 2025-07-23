@@ -1,4 +1,4 @@
-use crate::functions::{FluxError, FunctionMetadata, RegisterFunctionRequest, Result};
+use crate::functions::{FluxError, FunctionMetadata, RegisterFunctionRequest, Result, ScriptType};
 use crate::runtime::validator::FunctionValidator;
 use std::path::Path;
 use tokio::fs;
@@ -77,6 +77,12 @@ impl FunctionLoader {
                 .to_string()
         });
 
+        // 根据文件扩展名推断脚本类型
+        let script_type = path.extension()
+            .and_then(|ext| ext.to_str())
+            .and_then(ScriptType::from_extension)
+            .unwrap_or(ScriptType::Rust); // 默认为 Rust
+
         let req = RegisterFunctionRequest {
             name: function_name,
             description,
@@ -86,6 +92,7 @@ impl FunctionLoader {
             dependencies: None,
             parameters: None,
             return_type: None,
+            script_type,
         };
 
         Ok(FunctionMetadata::from_request(req))

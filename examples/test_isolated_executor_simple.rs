@@ -1,5 +1,5 @@
 use anyhow::Result;
-use flux::functions::{FunctionMetadata, InvokeRequest};
+use flux::functions::{FunctionMetadata, InvokeRequest, ScriptType};
 use flux::runtime::compiler::CompilerConfig;
 use flux::runtime::executor::{IsolatedExecutorConfig, IsolatedProcessExecutor};
 use flux::runtime::sandbox::SandboxConfig;
@@ -31,6 +31,7 @@ pub fn main() {
 }
 "#
         .to_string(),
+        Some(ScriptType::Rust), // 明确指定为 Rust 代码
     );
 
     // 创建进程级隔离执行器配置

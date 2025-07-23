@@ -1010,6 +1010,7 @@ impl PoolManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::functions::ScriptType;
     use crate::runtime::compiler::{CompilerConfig, RustCompiler};
     use crate::runtime::resource::ResourceManager;
     use crate::runtime::sandbox::{SandboxConfig, SandboxExecutor};
@@ -1047,7 +1048,8 @@ mod tests {
             version: "1.0.0".to_string(),
             dependencies: vec![],
             parameters: vec![],
-            return_type: "i32".to_string(),
+            return_type: crate::functions::ReturnType::Integer,
+            script_type: ScriptType::Rust,
         };
 
         let pool = pool_manager

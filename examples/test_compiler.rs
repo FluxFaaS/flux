@@ -1,4 +1,4 @@
-use flux::functions::{FunctionMetadata, InvokeRequest};
+use flux::functions::{FunctionMetadata, InvokeRequest, ScriptType};
 use flux::runtime::compiler::{CompilerConfig, RustCompiler, check_compilation_support};
 
 #[tokio::main]
@@ -41,6 +41,7 @@ fn add_numbers(a: f64, b: f64) -> f64 {
 }
 "#
         .to_string(),
+        Some(ScriptType::Rust), // 明确指定为 Rust 代码
     );
     println!("✅ 测试函数创建: {}", test_function.name);
     println!();

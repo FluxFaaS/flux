@@ -390,6 +390,7 @@ mod tests {
         let metadata = FunctionMetadata::new(
             "test".to_string(),
             "fn test() -> String { \"Hello\".to_string() }".to_string(),
+            None,
         );
 
         let record = FunctionRecord::new(
@@ -424,6 +425,7 @@ mod tests {
         let metadata = FunctionMetadata::new(
             "test".to_string(),
             "fn test() -> String { \"Hello\".to_string() }".to_string(),
+            None,
         );
 
         let record = FunctionRecord::new(
