@@ -11,3 +11,4 @@ fn main() {
     let area = calculate_area(10.0, 5.0);
     println!("Area: {}", area);
 }
+

@@ -431,85 +431,48 @@ impl SimpleRuntime {
         Ok(result)
     }
 
-    /// 包装JavaScript代码为可执行脚本
+    /// 包装JavaScript代码为可执行脚本 - 简化版本直接使用node执行
     fn wrap_javascript_code(&self, code: &str, request: &InvokeRequest) -> Result<String> {
         let input_json = serde_json::to_string(&request.input)
             .map_err(|e| FluxError::Runtime(format!("Failed to serialize input: {e}")))?;
 
+        // 极简包装：直接执行，输出JSON结果
         let wrapped_code = format!(r#"
-// FluxFaaS JavaScript Function Executor
 const input = {input_json};
 
-// Suppress console.log to avoid mixing with result output
-const originalConsoleLog = console.log;
+// 禁用console.log避免干扰输出
+const originalLog = console.log;
 console.log = () => {{}};
 
-let result;
-let executionError = null;
-
 try {{
-    // Method 1: Try to execute code and capture the last expression
-    const userFunction = new Function('input', `
-        "use strict";
-        {code}
-    `);
+    let result;
 
-    result = userFunction(input);
+    // 检查是否包含return语句
+    const codeStr = `{code}`;
+    if (codeStr.includes('return')) {{
+        // 包装在函数中执行
+        const fn = new Function('input', codeStr);
+        result = fn(input);
+    }} else {{
+        // 在有变量上下文的环境中执行
+        const {{a=input.a, b=input.b, c=input.c, d=input.d, e=input.e, f=input.f, g=input.g, h=input.h, i=input.i, j=input.j, k=input.k, l=input.l, m=input.m, n=input.n, o=input.o, p=input.p, q=input.q, r=input.r, s=input.s, t=input.t, u=input.u, v=input.v, w=input.w, x=input.x, y=input.y, z=input.z}} = {{}};
 
-    // Method 2: If result is undefined, try different approaches
-    if (result === undefined) {{
-        // Try to wrap the entire code in a return statement
-        try {{
-            const returnFunction = new Function('input', `
-                "use strict";
-                return (function() {{
-                    {code}
-                }})();
-            `);
-            result = returnFunction(input);
-        }} catch (e) {{
-            // Try to evaluate as a direct expression
-            try {{
-                const exprFunction = new Function('input', `
-                    "use strict";
-                    return ({code});
-                `);
-                result = exprFunction(input);
-            }} catch (e2) {{
-                // Execute code and look for common result variables
-                const sandbox = {{ input: input }};
-                const contextFunction = new Function('sandbox', `
-                    "use strict";
-                    const input = sandbox.input;
-                    let result, output, value, data;
+        // 尝试作为表达式执行
+        result = eval(codeStr);
 
-                    {code}
-
-                    // Return the first defined result variable
-                    if (typeof result !== 'undefined') return result;
-                    if (typeof output !== 'undefined') return output;
-                    if (typeof value !== 'undefined') return value;
-                    if (typeof data !== 'undefined') return data;
-
-                    return undefined;
-                `);
-                result = contextFunction(sandbox);
-            }}
+        // 如果结果是undefined，检查是否设置了常见的结果变量
+        if (result === undefined) {{
+            if (typeof output !== 'undefined') result = output;
+            else if (typeof value !== 'undefined') result = value;
+            else if (typeof data !== 'undefined') result = data;
         }}
     }}
 
+    console.log = originalLog;
+    console.log(JSON.stringify({{result}}));
 }} catch (error) {{
-    executionError = error.message;
-}}
-
-// Restore console.log
-console.log = originalConsoleLog;
-
-// Output only the result as JSON
-if (executionError) {{
-    console.log(JSON.stringify({{ error: executionError }}));
-}} else {{
-    console.log(JSON.stringify({{ result: result }}));
+    console.log = originalLog;
+    console.log(JSON.stringify({{error: error.message}}));
 }}
 "#);
 
@@ -1404,6 +1367,71 @@ else:
             tracing::warn!("Failed to record performance data: {}", e);
             // 可以在这里添加降级策略，比如记录到本地文件
         }
+    }
+
+    /// 提取用户代码中已声明的变量名，避免解构时冲突
+    fn extract_declared_variables(&self, code: &str) -> Vec<String> {
+        let mut declared_vars = Vec::new();
+
+        // 简单的字符串匹配来检测变量声明
+        let lines: Vec<&str> = code.lines().collect();
+        for line in lines {
+            let trimmed = line.trim();
+
+            // 匹配 const 声明
+            if trimmed.starts_with("const ") {
+                if let Some(var_part) = trimmed.strip_prefix("const ") {
+                    if let Some(var_name) = var_part.split_whitespace().next() {
+                        if let Some(clean_name) = var_name.split('=').next() {
+                            let name = clean_name.trim();
+                            if !name.contains('{') && !name.contains('[') { // 避免解构声明
+                                declared_vars.push(name.to_string());
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 匹配 let 声明
+            if trimmed.starts_with("let ") {
+                if let Some(var_part) = trimmed.strip_prefix("let ") {
+                    if let Some(var_name) = var_part.split_whitespace().next() {
+                        if let Some(clean_name) = var_name.split('=').next() {
+                            let name = clean_name.trim();
+                            if !name.contains('{') && !name.contains('[') {
+                                declared_vars.push(name.to_string());
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 匹配 var 声明
+            if trimmed.starts_with("var ") {
+                if let Some(var_part) = trimmed.strip_prefix("var ") {
+                    if let Some(var_name) = var_part.split_whitespace().next() {
+                        if let Some(clean_name) = var_name.split('=').next() {
+                            let name = clean_name.trim();
+                            if !name.contains('{') && !name.contains('[') {
+                                declared_vars.push(name.to_string());
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 匹配 function 声明
+            if trimmed.starts_with("function ") {
+                if let Some(func_part) = trimmed.strip_prefix("function ") {
+                    if let Some(func_name) = func_part.split('(').next() {
+                        let name = func_name.trim();
+                        declared_vars.push(name.to_string());
+                    }
+                }
+            }
+        }
+
+        declared_vars
     }
 }
 

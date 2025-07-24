@@ -50,3 +50,4 @@ pub fn build_routes() -> RootRoute {
 
     root
 }
+

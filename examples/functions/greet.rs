@@ -7,3 +7,4 @@ fn main() {
     let result = greet("World");
     println!("{}", result);
 }
+
